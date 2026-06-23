@@ -1,0 +1,8 @@
+/* Pong styles for appmegle. Canvas is a fixed 600x360 logical grid, scaled by CSS. */
+
+#pong-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: auto; }
+#pong-canvas {
+    width: min(92vw, 64vh, 640px); aspect-ratio: 5 / 3; touch-action: none; cursor: ns-resize;
+    background: rgba(10,10,20,.42); border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
+}
+#pong-hint { font-size: 13px; color: #fff; text-shadow: 0 1px 3px #000; }
