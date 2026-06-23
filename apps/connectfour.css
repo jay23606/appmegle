@@ -1,0 +1,12 @@
+/* Connect Four — translucent grid over the video, discs as colored circles. */
+#c4-board {
+    display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(6, 1fr);
+    gap: 4px; padding: 8px; border-radius: 10px; background: rgba(30,40,90,.45);
+    width: min(92vw, 62vh, 480px); aspect-ratio: 7 / 6;
+}
+.c4-cell {
+    border-radius: 50%; cursor: pointer; background: rgba(0,0,0,.45);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.15);
+}
+.c4-cell.r { background: radial-gradient(circle at 38% 35%, #ff8a8a, #d63b3b); }
+.c4-cell.y { background: radial-gradient(circle at 38% 35%, #ffe98a, #e6b800); }

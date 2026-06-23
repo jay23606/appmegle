@@ -1,0 +1,9 @@
+/* Hangman */
+#hm-set { display: flex; gap: 8px; }
+#hm-word { padding: 8px 10px; font-size: 15px; border: 0; border-radius: 6px; background: rgba(20,20,30,.7); color: #fff; width: 200px; }
+#hm-disp { font-size: clamp(22px, 6vw, 40px); letter-spacing: 2px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px #000; min-height: 1.2em; font-family: ui-monospace, monospace; }
+#hm-used { font-size: 16px; color: #fff; text-shadow: 0 1px 3px #000; min-height: 1.2em; }
+.hm-bad { color: #ff8a8a; text-transform: uppercase; }
+#hm-keys { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; max-width: 360px; }
+.hm-key { padding: 8px 0; font-size: 14px; text-transform: uppercase; border: 0; border-radius: 5px; cursor: pointer; background: rgba(255,255,255,.85); color: #111; }
+.hm-key.used, .hm-key:disabled { opacity: .35; cursor: default; }
