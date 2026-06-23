@@ -1,5 +1,7 @@
 # appmegle
 
+**[Try it live](https://jay23606.github.io/appmegle/)**
+
 A fork of [slumegle](https://github.com/jay23606/slumegle) that turns the random
 video chat into a small platform for **in-call mini-apps**. Once you're paired with
 a stranger, an **`-- Apps --`** dropdown next to Share lets you launch an app that
