@@ -441,7 +441,11 @@
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
     </script>
 
-    <!-- in-call apps: each registers itself with Appmegle (loaded after the host above) -->
+    <!-- in-call apps: each registers itself with Appmegle (loaded after the host above).
+         Dropdown order follows load order. To add an app, drop apps/<name>.js (+ css) and one line here. -->
     <script src="apps/chess.js"></script>
+    <script src="apps/tictactoe.js"></script>
+    <script src="apps/whiteboard.js"></script>
+    <script src="apps/pong.js"></script>
 </body>
 </html>
