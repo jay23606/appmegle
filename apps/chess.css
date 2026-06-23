@@ -6,7 +6,7 @@
 #chess-stat { flex: 1; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #chess-top button { padding: 6px 10px; font-size: 13px; border: 0; border-radius: 6px; color: #fff; background: rgba(0,0,0,.45); cursor: pointer; }
 
-#board { display: grid; grid-template-columns: repeat(8, 1fr); width: min(88vw, 70vh, 520px); aspect-ratio: 1; border-radius: 6px; overflow: hidden; box-shadow: 0 6px 28px rgba(0,0,0,.6); }
+#board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: min(88vw, 70vh, 520px); aspect-ratio: 1; border-radius: 6px; overflow: hidden; box-shadow: 0 6px 28px rgba(0,0,0,.6); }
 
 .sq { position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; font-size: calc(min(88vw, 70vh, 520px) / 8 * 0.82); line-height: 1; }
 .sq.light { background: rgba(225,225,240,.26); }
