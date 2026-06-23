@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>appmegle</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111111">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <style>
+        * { box-sizing: border-box; }
+        :root { --bg: #111; --fg: #eee; --bar: #1a1a1a; --stage: #000; --muted: #9ad; }
+        body.light { --bg: #fff; --fg: #111; --bar: #e6e6e6; --stage: #f0f0f0; --muted: #357; }
+        body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        #videos { position: relative; flex: 1; min-height: 0; background: var(--stage); overflow: hidden; }
+        #videos video.big { width: 100%; height: 100%; object-fit: contain; }
+        #remote-video:not([data-live]) { opacity: .25; }
+        #videos video.pip { position: absolute; top: 12px; right: 12px; width: 22%; max-width: 220px; aspect-ratio: 4/3; object-fit: contain; background: var(--stage); border: 2px solid rgba(128,128,128,.6); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.5); z-index: 3; cursor: pointer; }
+        #controls { position: absolute; left: 0; right: 0; top: 0; z-index: 4; display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: linear-gradient(to bottom, rgba(0,0,0,.5), transparent); opacity: 0; transition: opacity .2s; pointer-events: none; }
+        #videos:hover #controls { opacity: 1; pointer-events: auto; }
+        #vol { width: 130px; accent-color: #c9a6ff; cursor: pointer; }
+        @media (hover: none) { #controls { opacity: 1; pointer-events: auto; } #share { display: none; } }
+        /* phones: bigger pip, portrait box to match phone cameras */
+        @media (max-width: 640px) { #videos video.pip { width: 34%; aspect-ratio: 3/4; top: 8px; right: 8px; border-radius: 6px; } }
+        #bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; background: var(--bar); align-items: center; }
+        #stat { font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        button { background: #2a6; color: #fff; border: 0; padding: 10px 16px; font-size: 15px; border-radius: 6px; cursor: pointer; }
+        button:disabled { background: #444; cursor: default; }
+        #stop { background: #a33; }
+        #toggle-chat { background: #357; }
+        #toggle-chat.unread { background: #c63; }
+        #chat { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; flex-direction: column; height: 40%; max-height: 320px; background: linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,.25)); backdrop-filter: blur(2px); }
+        #chat.hidden { display: none; }
+        #log { flex: 1; overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; text-shadow: 0 1px 2px #000; }
+        #log .me { color: #7df; } #log .them { color: #fd7; } #log .sys { color: #bbb; font-style: italic; }
+        #msg { border: 0; background: rgba(20,20,20,.7); color: #eee; padding: 10px; font-size: 15px; border-radius: 6px; margin: 0 8px 8px; }
+        #msg:disabled { color: #777; }
+
+        /* ---- generic app host: apps render into #app-stage and bring their own CSS ---- */
+        #app-stage { position: absolute; inset: 0; z-index: 3; display: none; align-items: center; justify-content: center; pointer-events: none; }
+        #app-stage.open { display: flex; }
+        #app-select { background: #2a2a2a; color: #fff; border: 0; padding: 10px 12px; font-size: 15px; border-radius: 6px; cursor: pointer; }
+        #app-select:disabled { background: #444; color: #888; cursor: default; }
+    </style>
+</head>
+<body>
+    <div id="videos">
+        <video id="remote-video" class="big" autoplay playsinline></video>
+        <video id="local-video" class="pip" autoplay muted playsinline></video>
+        <div id="app-stage"></div>
+        <div id="chat" class="hidden">
+            <div id="log"></div>
+            <input id="msg" placeholder="Say something..." disabled>
+        </div>
+        <div id="controls">
+            <input id="vol" type="range" min="0" max="1" step="0.05" value="1" title="Volume">
+        </div>
+    </div>
+    <div id="bar">
+        <button id="go">Start</button>
+        <button id="stop" disabled>Stop</button>
+        <button id="toggle-chat">Chat</button>
+        <button id="share" disabled style="background:#736">Share</button>
+        <select id="app-select" disabled title="Apps"><option value="">-- Apps --</option></select>
+        <span id="stat" style="flex:1;min-width:0">Click Start to meet a stranger</span>
+        <span id="typing" style="font-size:14px;color:#fd7;font-style:italic;white-space:nowrap;text-align:center;display:none">Stranger is typing…</span>
+        <span style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:8px">
+            <span id="country" style="font-size:14px;color:#9ad;white-space:nowrap"></span>
+            <span id="online" style="font-size:14px;color:#6c6;white-space:nowrap">0 online</span>
+            <button id="theme" style="padding:10px 12px;background:#555">🌙</button>
+        </span>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-database.js"></script>
+    <script>
+        // ---- helpers (same spirit as the inspo repos) ----
+        const $ = (id, props) => { const e = document.getElementById(id); if (props) Object.assign(e, props); return e; };
+        const rand = () => Math.random().toString(36).slice(2);
+        Element.prototype.on = function (e, fn) { this.addEventListener(e, fn); return this; };
+
+        // ---- config / state ----
+        const firebaseConfig = { databaseURL: "https://jabdal-default-rtdb.firebaseio.com" };
+        firebase.initializeApp(firebaseConfig);
+        const lobby = firebase.database().ref('appmegle/lobby');     // waiting strangers
+        const presence = firebase.database().ref('appmegle/online'); // everyone currently here
+        const myKey = rand();                                        // our slot in the lobby
+
+        let peer, localStream, call, conn, partner, searching = false, started = false, screenStream = null, myCountry = '';
+        let searchTimer = null, typingTimer = null, typingShown = false;
+        let amCaller = false;                       // caller is "player 1" (e.g. White in chess), answerer is "player 2"
+        const MATCH_TIMEOUT = 30000;   // ms before "still looking" nudge
+
+        const go = $('go'), stop = $('stop'), msg = $('msg'),
+              stat = $('stat'), log = $('log'), localVideo = $('local-video'), remoteVideo = $('remote-video'),
+              online = $('online'), chat = $('chat'), toggleChat = $('toggle-chat'), typing = $('typing'), share = $('share'), country = $('country'),
+              appSelect = $('app-select'), appStage = $('app-stage');
+
+        const leaveLobby = () => lobby.child(myKey).remove();
+        const leave = () => { leaveLobby(); presence.child(myKey).remove(); };
+
+        // live count of everyone currently present (updates for all clients in realtime)
+        presence.on('value', (snap) => {
+            const n = snap.numChildren();
+            online.textContent = `${n} online`;
+        });
+
+        const say = (t) => stat.textContent = t;
+        const line = (text, cls) => {
+            const d = document.createElement('div'); d.className = cls; d.textContent = text;
+            log.appendChild(d); log.scrollTop = log.scrollHeight;
+            if (cls === 'them' && chat.classList.contains('hidden')) toggleChat.classList.add('unread');
+        };
+        const clearLog = () => log.innerHTML = '';
+        const send = (d) => { try { conn && conn.send(d); } catch (e) {} };
+
+        // ======================================================================
+        //  Appmegle — tiny plugin host for in-call apps (chess, and later
+        //  whiteboard / tic-tac-toe / pong / …). An app file under apps/ calls
+        //  Appmegle.register({ id, label, css, mount, unmount, onData }).
+        //
+        //   - Selecting an app from the "-- Apps --" dropdown opens it for BOTH
+        //     peers; selecting "-- Apps --" closes it for both.
+        //   - mount(ctx) gets { root, send, amCaller }. ctx.send(obj) delivers a
+        //     JSON message to the other peer's matching app via onData(obj).
+        //   - Messages ride the existing PeerJS data channel; the host tags each
+        //     with the app id and routes incoming ones back to the right app.
+        // ======================================================================
+        window.Appmegle = {
+            _apps: {},
+            _active: null,
+            register(app) {
+                this._apps[app.id] = app;
+                if (app.css && !document.querySelector('link[data-app="' + app.id + '"]')) {
+                    const l = document.createElement('link');
+                    l.rel = 'stylesheet'; l.href = app.css; l.dataset.app = app.id;
+                    document.head.appendChild(l);
+                }
+                const opt = document.createElement('option');
+                opt.value = app.id; opt.textContent = app.label;
+                appSelect.appendChild(opt);
+            },
+            open(id, broadcast) {
+                if (this._active === id) return;            // already open (e.g. echo of our own open)
+                if (this._active) this.close(false);        // only one app at a time, for now
+                const app = this._apps[id];
+                if (!app) return;
+                this._active = id;
+                appSelect.value = id;
+                appStage.classList.add('open');
+                app.mount({ root: appStage, send: (o) => send(Object.assign({ app: id }, o)), amCaller });
+                if (broadcast) send({ app: 'host', t: 'open', id });
+            },
+            close(broadcast) {
+                const app = this._active && this._apps[this._active];
+                if (app && app.unmount) try { app.unmount(); } catch (e) {}
+                appStage.classList.remove('open');
+                appStage.innerHTML = '';
+                this._active = null;
+                appSelect.value = '';
+                if (broadcast) send({ app: 'host', t: 'close' });
+            },
+            data(msg) {                                     // an object message arrived on the data channel
+                if (msg.app === 'host') {
+                    if (msg.t === 'open') this.open(msg.id, false);
+                    else if (msg.t === 'close') this.close(false);
+                    return;
+                }
+                const app = this._apps[msg.app];
+                if (app && this._active === msg.app && app.onData) app.onData(msg);
+            }
+        };
+
+        appSelect.on('change', () => {
+            const id = appSelect.value;
+            if (id) Appmegle.open(id, true); else Appmegle.close(true);
+        });
+
+        // fetch our own country once (city/region deliberately not used); tries providers in order
+        const flag = (cc) => cc.toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt()));
+        const providers = [
+            { url: 'https://ipwho.is/', pick: j => j.country_code && { code: j.country_code, name: j.country } },
+            { url: 'https://ipapi.co/json/', pick: j => j.country_code && { code: j.country_code, name: j.country_name } },
+            { url: 'https://get.geojs.io/v1/ip/country.json', pick: j => j.country && { code: j.country, name: j.name || j.country } }
+        ];
+        const sendCountry = () => { if (myCountry && conn) send('__country__' + myCountry); };
+        const fetchCountry = async () => {
+            for (const p of providers) {
+                try {
+                    const r = await fetch(p.url);
+                    const got = r.ok && p.pick(await r.json());
+                    if (got) {
+                        myCountry = flag(got.code) + ' ' + got.name;
+                        if (!partner) country.textContent = 'You: ' + myCountry;
+                        sendCountry();   // in case we connected before the fetch finished
+                        return;
+                    }
+                } catch (e) {}
+            }
+        };
+        fetchCountry();
+
+        // ---- media ----
+        const getMedia = () => navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+        // ---- PeerJS wiring (works whether we called or were called) ----
+        const watchIce = (c) => {
+            const pc = c.peerConnection;
+            if (!pc) return;
+            pc.oniceconnectionstatechange = () => {
+                const s = pc.iceConnectionState;
+                if (s === 'checking') say('Connecting…');
+                else if (s === 'connected' || s === 'completed') say('Connected');
+                else if (s === 'disconnected') say('Connection unstable…');
+                else if (s === 'failed') { say('Connection failed'); partnerGone(); }
+            };
+        };
+        const wireCall = (c) => {
+            call = c;
+            c.on('stream', (s) => { remoteVideo.srcObject = s; remoteVideo.dataset.live = '1'; });
+            c.on('close', partnerGone);
+            c.on('error', partnerGone);
+            watchIce(c);
+        };
+        const showTyping = (on) => {
+            typingShown = on;
+            typing.style.display = on ? '' : 'none';
+        };
+
+        const wireConn = (c) => {
+            conn = c;
+            c.on('data', (d) => {
+                if (d && typeof d === 'object') return Appmegle.data(d);   // app/host messages travel as objects
+                if (d === '__next__') return partnerGone();
+                if (d === '__typing__') return showTyping(true);
+                if (d === '__stoptyping__') return showTyping(false);
+                if (d.startsWith && d.startsWith('__country__')) { const cn = d.slice(11); country.textContent = cn; return line('Stranger is from ' + cn, 'sys'); }
+                showTyping(false);
+                line('Stranger: ' + d, 'them');
+            });
+            c.on('open', () => { msg.disabled = false; sendCountry(); });
+            c.on('close', partnerGone);
+        };
+
+        const connectTo = (id) => {                 // we are the caller → we are player 1
+            partner = id;
+            amCaller = true;
+            wireConn(peer.connect(id, { reliable: true, serialization: 'json' }));
+            wireCall(peer.call(id, localStream));
+            paired();
+        };
+
+        const paired = () => {
+            searching = false;
+            clearTimeout(searchTimer);
+            clearLog();
+            remoteVideo.className = 'big'; localVideo.className = 'pip';   // reset swap
+            country.textContent = '';   // clears "You: ..."; stranger's country fills in on data
+            line('You are now chatting with a stranger.', 'sys');
+            say('Connected');
+            go.textContent = 'Next'; go.disabled = false; stop.disabled = false; msg.disabled = false;
+            share.disabled = false;
+            appSelect.disabled = false;
+        };
+
+        const partnerGone = () => {
+            if (!partner) return;
+            line('Stranger has disconnected.', 'sys');
+            cleanupPartner();
+            if (stop.disabled) return;              // we stopped fully
+            search();                               // auto-find someone new
+        };
+
+        const cleanupPartner = () => {
+            partner = null;
+            country.textContent = '';
+            showTyping(false); clearTimeout(typingTimer);
+            if (screenStream) stopShare();
+            share.disabled = true;
+            Appmegle.close(false);                  // tear down any running app with the old partner
+            appSelect.disabled = true;
+            remoteVideo.removeAttribute('data-live'); remoteVideo.srcObject = null;
+            if (conn) { conn.close(); conn = null; }
+            if (call) { call.close(); call = null; }
+            msg.disabled = true;
+        };
+
+        // ---- matchmaking: atomically grab a waiting stranger, else advertise self ----
+        const search = () => {
+            searching = true;
+            say('Looking for a stranger…');
+            clearTimeout(searchTimer);
+            let claimedId = null;
+            lobby.transaction((current) => {
+                claimedId = null;                       // reset each run (txn may retry)
+                current = current || {};
+                for (const k in current) {
+                    if (current[k] !== peer.id) {       // a waiting stranger that isn't us
+                        claimedId = current[k];
+                        delete current[k];              // claim them, atomically
+                        return current;
+                    }
+                }
+                current[myKey] = peer.id;               // nobody waiting → advertise self
+                return current;
+            }).then(() => {
+                if (claimedId) {
+                    connectTo(claimedId);
+                } else {
+                    lobby.child(myKey).onDisconnect().remove();
+                    searchTimer = setTimeout(() => {
+                        if (searching) say('Still looking… not many people around right now.');
+                    }, MATCH_TIMEOUT);
+                }
+            });
+        };
+
+        // someone claimed us → they will call us; just answer (we are player 2)
+        const listen = () => {
+            peer.on('call', (incoming) => {
+                if (partner) return incoming.close();
+                partner = incoming.peer;
+                amCaller = false;
+                incoming.answer(localStream);
+                wireCall(incoming);
+                paired();
+            });
+            peer.on('connection', (c) => { if (c.peer === partner || !conn) wireConn(c); });
+        };
+
+        // ---- buttons ----
+        const startUp = async () => {
+            go.disabled = true;
+            try { localStream = await getMedia(); } catch (e) { say('Camera/mic blocked'); go.disabled = false; return; }
+            localVideo.srcObject = localStream;
+            started = true;
+            peer = new Peer();
+            peer.on('open', () => {
+                presence.child(myKey).set(true);
+                presence.child(myKey).onDisconnect().remove();
+                listen(); search();
+                go.textContent = 'Next'; go.disabled = false; stop.disabled = false;
+            });
+            peer.on('error', (e) => say('Peer error: ' + e.type));
+        };
+
+        const skip = () => {
+            leaveLobby();
+            if (partner) send('__next__');
+            cleanupPartner();
+            search();
+        };
+
+        go.on('click', () => started ? skip() : startUp());
+
+        stop.on('click', () => {
+            leave();
+            cleanupPartner();
+            searching = false; started = false;
+            clearTimeout(searchTimer);
+            say('Stopped');
+            line('You disconnected.', 'sys');
+            go.textContent = 'Start'; go.disabled = false; stop.disabled = true;
+        });
+
+        const sendTyping = () => {
+            if (!conn) return;
+            send('__typing__');
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => send('__stoptyping__'), 1500);
+        };
+
+        msg.on('keypress', (e) => {
+            if (e.key !== 'Enter' || !conn || !msg.value) return;
+            clearTimeout(typingTimer);
+            send('__stoptyping__');
+            send(msg.value);
+            line('You: ' + msg.value, 'me');
+            msg.value = '';
+        });
+        msg.on('input', () => { if (msg.value) sendTyping(); });
+
+        // Esc = Next (skip to a new stranger), once started
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && started && !go.disabled) { e.preventDefault(); skip(); }
+        });
+
+        const swapVideos = (e) => {
+            if (!e.target.classList.contains('pip')) return;   // only the small one promotes
+            [localVideo, remoteVideo].forEach(v => { v.classList.toggle('big'); v.classList.toggle('pip'); });
+        };
+        localVideo.on('click', swapVideos);
+        remoteVideo.on('click', swapVideos);
+
+        // ---- screen share: swap the outgoing video track without renegotiating ----
+        const setVideoTrack = (track) => {
+            if (!call || !call.peerConnection) return;
+            const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender) sender.replaceTrack(track);
+        };
+        const stopShare = () => {
+            if (!screenStream) return;
+            screenStream.getTracks().forEach(t => t.stop());
+            screenStream = null;
+            const cam = localStream.getVideoTracks()[0];
+            setVideoTrack(cam);
+            localVideo.srcObject = localStream;
+            share.textContent = 'Share'; share.style.background = '#736';
+        };
+        share.on('click', async () => {
+            if (screenStream) return stopShare();
+            try { screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true }); }
+            catch (e) { return; }                       // user cancelled the picker
+            const track = screenStream.getVideoTracks()[0];
+            track.onended = stopShare;                   // native "Stop sharing" button
+            setVideoTrack(track);
+            localVideo.srcObject = screenStream;         // preview your own share
+            share.textContent = 'Stop Share'; share.style.background = '#a33';
+        });
+
+        $('vol').on('input', (e) => { remoteVideo.volume = e.target.value; });
+
+        $('theme').on('click', (e) => {
+            const light = document.body.classList.toggle('light');
+            e.target.textContent = light ? '☀️' : '🌙';
+        });
+
+        toggleChat.on('click', () => {
+            chat.classList.toggle('hidden');
+            const open = !chat.classList.contains('hidden');
+            if (open) { toggleChat.classList.remove('unread'); if (!msg.disabled) msg.focus(); }
+        });
+
+        // clean up our lobby slot if the tab closes
+        window.addEventListener('beforeunload', leave);
+
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    </script>
+
+    <!-- in-call apps: each registers itself with Appmegle (loaded after the host above) -->
+    <script src="apps/chess.js"></script>
+</body>
+</html>

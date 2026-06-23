@@ -1,0 +1,21 @@
+/* Chess app styles for appmegle. Loaded by the host when apps/chess.js registers.
+   The board renders into #app-stage; "outline only" pieces let the video show through. */
+
+#chess-ui { display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
+#chess-top { display: flex; align-items: center; gap: 10px; padding: 0 4px; text-shadow: 0 1px 3px #000; }
+#chess-stat { flex: 1; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#chess-top button { padding: 6px 10px; font-size: 13px; border: 0; border-radius: 6px; color: #fff; background: rgba(0,0,0,.45); cursor: pointer; }
+
+#board { display: grid; grid-template-columns: repeat(8, 1fr); width: min(88vw, 70vh, 520px); aspect-ratio: 1; border-radius: 6px; overflow: hidden; box-shadow: 0 6px 28px rgba(0,0,0,.6); }
+
+.sq { position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; font-size: calc(min(88vw, 70vh, 520px) / 8 * 0.82); line-height: 1; }
+.sq.light { background: rgba(225,225,240,.26); }
+.sq.dark  { background: rgba(35,35,55,.42); }
+.sq.sel { box-shadow: inset 0 0 0 3px #fd7; }
+.sq.legal::after { content: ''; position: absolute; width: 28%; height: 28%; border-radius: 50%; background: rgba(120,225,120,.75); }
+.sq.legal.cap::after { width: 84%; height: 84%; background: transparent; box-shadow: inset 0 0 0 3px rgba(120,225,120,.85); }
+
+/* "just the outline" — transparent fill, stroke only, so the live video shows through */
+.pc { color: transparent; }
+.pc.w { -webkit-text-stroke: 2.5px #fff; text-stroke: 2.5px #fff; filter: drop-shadow(0 0 2px rgba(0,0,0,.9)); }
+.pc.b { -webkit-text-stroke: 2.5px #111; text-stroke: 2.5px #111; filter: drop-shadow(0 0 2px rgba(255,255,255,.9)); }
