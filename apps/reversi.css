@@ -1,0 +1,11 @@
+/* Reversi / Othello */
+#rv-board {
+    display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+    gap: 2px; padding: 6px; border-radius: 8px; background: rgba(20,70,40,.5);
+    width: min(88vw, 64vh, 480px); aspect-ratio: 1;
+}
+.rv-sq { display: flex; align-items: center; justify-content: center; cursor: pointer; background: rgba(255,255,255,.06); border-radius: 3px; }
+.rv-sq.hint { box-shadow: inset 0 0 0 2px rgba(140,220,255,.6); }
+.rv-d { width: 78%; height: 78%; border-radius: 50%; }
+.rv-d.b { background: radial-gradient(circle at 36% 32%, #555, #000); }
+.rv-d.w { background: radial-gradient(circle at 36% 32%, #fff, #bbb); }

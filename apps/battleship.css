@@ -1,0 +1,12 @@
+/* Battleship — two 8x8 grids over the video. */
+.bs-label { font-size: 12px; color: #cde; text-shadow: 0 1px 3px #000; align-self: flex-start; margin-left: 2px; }
+.bs-grid {
+    display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); gap: 2px;
+    width: min(78vw, 40vh, 300px); aspect-ratio: 1; padding: 4px; border-radius: 6px; background: rgba(20,40,80,.5);
+}
+.bs-cell { background: rgba(255,255,255,.08); border-radius: 2px; }
+#bs-enemy .bs-cell { cursor: crosshair; }
+.bs-cell.ship { background: rgba(170,180,190,.7); }
+.bs-cell.miss { background: rgba(255,255,255,.5); }
+.bs-cell.miss::after, .bs-cell.hit::after { content: ''; display: block; }
+.bs-cell.hit { background: radial-gradient(circle, #ff6a4d, #b21d00); }

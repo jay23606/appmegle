@@ -89,18 +89,22 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 
 ## Roadmap
 
-- [x] App host + `-- Apps --` dropdown
+- [x] App host + `-- Apps --` dropdown (alphabetical)
 - [x] Chess
+- [x] Checkers
+- [x] Connect Four
+- [x] Reversi / Othello
 - [x] Tic-tac-toe
+- [x] Dots and Boxes
+- [x] Battleship
+- [x] Hangman
+- [x] Rock-Paper-Scissors
+- [x] 20 Questions
 - [x] Whiteboard (shared drawing over the video)
 - [x] Pong (real-time, authoritative-host model)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
-
-Turn-based / deterministic (easy — just exchange moves, like chess/tic-tac-toe):
-Connect Four, Checkers, Dots and Boxes, Reversi/Othello, Battleship, Hangman,
-Rock-Paper-Scissors (reveal-on-both), 20 Questions.
 
 Real-time (authoritative-host model, like pong): Air Hockey, a co-op or versus
 Snake, Tron light-cycles, a simple platformer race, Asteroids.

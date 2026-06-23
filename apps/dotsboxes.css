@@ -1,0 +1,15 @@
+/* Dots and Boxes — interleaved dot / edge / box grid over the video. */
+#dab-board {
+    display: grid; align-items: center; justify-items: center;
+    padding: 10px; border-radius: 10px; background: rgba(20,20,35,.45);
+}
+.dab-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.85); }
+.dab-h { width: 46px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.12); cursor: pointer; }
+.dab-v { width: 10px; height: 46px; border-radius: 5px; background: rgba(255,255,255,.12); cursor: pointer; }
+.dab-h.on, .dab-v.on { background: #cde; cursor: default; }
+.dab-box {
+    width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+}
+.dab-box.a { background: rgba(90,180,255,.45); }
+.dab-box.b { background: rgba(255,150,70,.45); }

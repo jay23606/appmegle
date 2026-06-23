@@ -44,6 +44,11 @@
         #app-stage.open { display: flex; }
         #app-select { background: #2a2a2a; color: #fff; border: 0; padding: 10px 12px; font-size: 15px; border-radius: 6px; cursor: pointer; }
         #app-select:disabled { background: #444; color: #888; cursor: default; }
+        /* shared helpers apps can use for a consistent status bar + buttons */
+        .app-col { display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: auto; }
+        .app-bar { display: flex; align-items: center; gap: 10px; width: 100%; padding: 0 4px; text-shadow: 0 1px 3px #000; }
+        .app-bar .stat { flex: 1; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .app-btn { padding: 6px 10px; font-size: 13px; border: 0; border-radius: 6px; color: #fff; background: rgba(0,0,0,.5); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -143,6 +148,10 @@
                 const opt = document.createElement('option');
                 opt.value = app.id; opt.textContent = app.label;
                 appSelect.appendChild(opt);
+                // keep the dropdown alphabetical by label, leaving the "-- Apps --" placeholder first
+                [...appSelect.options].slice(1)
+                    .sort((a, b) => a.textContent.localeCompare(b.textContent))
+                    .forEach(o => appSelect.appendChild(o));
             },
             open(id, broadcast) {
                 if (this._active === id) return;            // already open (e.g. echo of our own open)
@@ -444,7 +453,15 @@
     <!-- in-call apps: each registers itself with Appmegle (loaded after the host above).
          Dropdown order follows load order. To add an app, drop apps/<name>.js (+ css) and one line here. -->
     <script src="apps/chess.js"></script>
+    <script src="apps/checkers.js"></script>
+    <script src="apps/connectfour.js"></script>
+    <script src="apps/reversi.js"></script>
     <script src="apps/tictactoe.js"></script>
+    <script src="apps/dotsboxes.js"></script>
+    <script src="apps/battleship.js"></script>
+    <script src="apps/hangman.js"></script>
+    <script src="apps/rps.js"></script>
+    <script src="apps/twentyq.js"></script>
     <script src="apps/whiteboard.js"></script>
     <script src="apps/pong.js"></script>
 </body>
