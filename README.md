@@ -102,12 +102,18 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] 20 Questions
 - [x] Whiteboard (shared drawing over the video)
 - [x] Pong (real-time, authoritative-host model)
+- [x] Air Hockey
+- [x] Tron light-cycles
+- [x] Snake (versus)
+- [x] Asteroids (co-op)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
 
-Real-time (authoritative-host model, like pong): Air Hockey, a co-op or versus
-Snake, Tron light-cycles, a simple platformer race, Asteroids.
+A shared platformer race is still open — it's the one real-time idea that needs a
+designed level + gravity/physics, so it's a bigger lift than the pong-style games
+above. Other directions: utility apps (watch-together queue, collaborative
+scratchpad, icebreaker/question deck, spinner wheel, soundboard, emoji bursts).
 
 Non-game / utility: collaborative text scratchpad, a shared YouTube/“watch
 together” queue, emoji-reaction bursts over the video, a shared timer/stopwatch,
