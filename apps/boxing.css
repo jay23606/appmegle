@@ -1,0 +1,9 @@
+/* Boxing */
+#bx-canvas {
+    width: min(94vw, 60vh, 600px); aspect-ratio: 560 / 360;
+    background: rgba(20,20,40,.42); border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
+}
+#bx-pad { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+#bx-pad button { padding: 10px 14px; border: 0; border-radius: 8px; background: rgba(255,255,255,.85); color: #111; font-size: 15px; font-weight: 700; cursor: pointer; touch-action: none; }
+#bx-pad button[data-a="punch"] { background: #e23b3b; color: #fff; }
+#bx-pad button[data-a="block"] { background: #3a78e2; color: #fff; }

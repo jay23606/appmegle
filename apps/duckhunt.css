@@ -1,0 +1,5 @@
+/* Duck Hunt */
+#dh-canvas {
+    width: min(94vw, 64vh, 700px); aspect-ratio: 640 / 420; touch-action: none; cursor: crosshair;
+    background: rgba(40,90,150,.4); border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
+}
