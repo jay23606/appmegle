@@ -1,7 +1,7 @@
 /* Tron */
 #tr-canvas {
     width: min(92vw, 56vh, 560px); aspect-ratio: 51 / 33; image-rendering: pixelated;
-    background: rgba(5,10,25,.65); border-radius: 6px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
+    background: rgba(5,10,25,.45); border-radius: 6px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
 }
 #tr-pad { display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: 40px 40px; gap: 4px; justify-content: center; }
 #tr-pad button { border: 0; border-radius: 6px; background: rgba(255,255,255,.85); color: #111; font-size: 16px; cursor: pointer; }

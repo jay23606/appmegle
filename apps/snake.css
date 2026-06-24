@@ -1,7 +1,7 @@
 /* Snake */
 #sn-canvas {
     width: min(92vw, 56vh, 560px); aspect-ratio: 28 / 20; image-rendering: pixelated;
-    background: rgba(8,16,12,.6); border-radius: 6px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
+    background: rgba(8,16,12,.42); border-radius: 6px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
 }
 #sn-pad { display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: 40px 40px; gap: 4px; justify-content: center; }
 #sn-pad button { border: 0; border-radius: 6px; background: rgba(255,255,255,.85); color: #111; font-size: 16px; cursor: pointer; }
