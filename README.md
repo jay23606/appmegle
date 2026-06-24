@@ -106,14 +106,13 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Tron light-cycles
 - [x] Snake (versus)
 - [x] Asteroids (co-op)
+- [x] Platform Racer (race to the flag; each client simulates its own avatar)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
 
-A shared platformer race is still open — it's the one real-time idea that needs a
-designed level + gravity/physics, so it's a bigger lift than the pong-style games
-above. Other directions: utility apps (watch-together queue, collaborative
-scratchpad, icebreaker/question deck, spinner wheel, soundboard, emoji bursts).
+Utility apps are the open direction now: watch-together queue, collaborative
+scratchpad, icebreaker/question deck, spinner wheel, soundboard, emoji bursts.
 
 Non-game / utility: collaborative text scratchpad, a shared YouTube/“watch
 together” queue, emoji-reaction bursts over the video, a shared timer/stopwatch,
