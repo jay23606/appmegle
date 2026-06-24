@@ -1,0 +1,24 @@
+/* Uno — cards opaque (must be readable), surrounding panel translucent over the video. */
+#uno { gap: 10px; }
+#uno-opp { display: flex; gap: 3px; min-height: 30px; flex-wrap: wrap; justify-content: center; max-width: 90vw; }
+.uno-back { width: 22px; height: 32px; border-radius: 4px; background: repeating-linear-gradient(45deg, #333, #333 4px, #555 4px, #555 8px); box-shadow: 0 1px 2px rgba(0,0,0,.5); }
+
+#uno-mid { display: flex; align-items: center; gap: 14px; }
+#uno-color { width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,.6); }
+
+.uno-card {
+    width: 46px; height: 66px; border: 0; border-radius: 8px; color: #fff; font-size: 22px; font-weight: 800;
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,.5), inset 0 0 0 3px rgba(255,255,255,.85); background: #555;
+    text-shadow: 0 1px 2px rgba(0,0,0,.5);
+}
+.uno-card.r { background: #e23b3b; } .uno-card.y { background: #e0b020; }
+.uno-card.g { background: #3ab35a; } .uno-card.b { background: #3a78e2; }
+.uno-card.w { background: conic-gradient(#e23b3b, #e0b020, #3ab35a, #3a78e2, #e23b3b); }
+.uno-card.back { background: repeating-linear-gradient(45deg, #333, #333 5px, #555 5px, #555 10px); }
+.uno-card:disabled { opacity: .55; cursor: default; box-shadow: 0 2px 6px rgba(0,0,0,.4), inset 0 0 0 3px rgba(255,255,255,.4); }
+
+#uno-hand { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 94vw; padding: 8px; border-radius: 10px; background: rgba(0,0,0,.35); }
+#uno-colors { display: flex; gap: 10px; }
+#uno-colors button { width: 40px; height: 40px; border: 2px solid rgba(255,255,255,.8); border-radius: 8px; cursor: pointer; }
+#uno-colors.hidden { display: none; }
