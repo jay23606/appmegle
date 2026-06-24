@@ -99,7 +99,7 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Battleship
 - [x] Hangman
 - [x] Rock-Paper-Scissors
-- [x] 20 Questions
+- [x] Icebreakers (shared, endlessly-generated get-to-know-you questions; tap to advance)
 - [x] Whiteboard (shared drawing over the video)
 - [x] Pong (real-time, authoritative-host model)
 - [x] Air Hockey
