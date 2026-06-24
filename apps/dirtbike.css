@@ -1,0 +1,8 @@
+/* Dirtbike Racer */
+#db-canvas {
+    width: min(94vw, 60vh, 720px); aspect-ratio: 720 / 360;
+    background: rgba(30,60,90,.38); border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
+}
+#db-pad { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+#db-pad button { padding: 10px 14px; border: 0; border-radius: 8px; background: rgba(255,255,255,.85); color: #111; font-size: 15px; font-weight: 700; cursor: pointer; touch-action: none; }
+#db-pad button[data-k="t"] { background: #e8821e; color: #fff; }
