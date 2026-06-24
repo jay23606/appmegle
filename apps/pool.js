@@ -4,7 +4,7 @@
 // stop, then resolves the turn. Caller = reds, answerer = yellows; clear your colour
 // then pot the black to win. Potting the black early, or with colours left, loses.
 (function () {
-    const W = 700, H = 380, M = 28, R = 9, PR = 19, MAXSPD = 1200, FRICT = 0.985, SUB = 5, SEND = 33;
+    const W = 700, H = 380, M = 28, R = 9, PR = 19, MAXSPD = 2600, FRICT = 0.989, SUB = 7, SEND = 33;
     const minX = M + R, maxX = W - M - R, minY = M + R, maxY = H - M - R;
     const POCKETS = [[M, M], [W/2, M], [W-M, M], [M, H-M], [W/2, H-M], [W-M, H-M]];
 
@@ -114,7 +114,7 @@
                 if (!aiming) return; aiming = false;
                 const dx = balls[0].x - aim.x, dy = balls[0].y - aim.y, d = Math.hypot(dx, dy);
                 if (d < 8) return;
-                const pow = Math.min(d, 200)/200 * 1000, a = Math.atan2(dy, dx);
+                const pow = Math.min(d, 170)/170 * 2300, a = Math.atan2(dy, dx);
                 shoot(Math.cos(a)*pow, Math.sin(a)*pow);
             });
             balls = auth ? rack() : []; if (auth) newGame();
