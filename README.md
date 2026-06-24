@@ -110,6 +110,8 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Pool (simplified UK 8-ball; authoritative ball physics)
 - [x] Uno (hidden hands; caller is the authoritative referee)
 - [x] Monopoly (full board, rent/houses/jail/cards; v1 has no trading/auctions/mortgaging)
+- [x] Duck Hunt (2-player competitive shooting)
+- [x] Boxing (2-player, Punch-Out style — punch/block/dodge + stamina)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
