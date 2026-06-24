@@ -1,0 +1,32 @@
+/* Monopoly — 11x11 board, translucent cells over the video, opaque tokens/houses. */
+#mp-board {
+    display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(11, 1fr);
+    width: min(94vw, 80vh, 600px); aspect-ratio: 1; gap: 1px;
+    background: rgba(20,60,40,.45); border-radius: 8px; padding: 3px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
+}
+.mp-cell {
+    position: relative; background: rgba(255,255,255,.10); border-radius: 2px; overflow: hidden;
+    font-size: 7px; line-height: 1.05; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.8); cursor: pointer;
+    display: flex; flex-direction: column; padding: 1px;
+}
+.mp-band { height: 6px; margin: -1px -1px 1px -1px; }
+.mp-nm { font-weight: 700; word-break: break-word; }
+.mp-pr { opacity: .85; font-size: 6px; }
+.mp-h { font-size: 7px; }
+.mp-cell.own-a { box-shadow: inset 0 0 0 2px #5db4ff; }
+.mp-cell.own-b { box-shadow: inset 0 0 0 2px #ff9d3d; }
+.mp-toks { position: absolute; right: 1px; bottom: 1px; display: flex; gap: 1px; }
+.mp-tok { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(0,0,0,.5); }
+.mp-tok.a { background: #5db4ff; } .mp-tok.b { background: #ff9d3d; }
+
+#mp-center {
+    grid-row: 2 / 11; grid-column: 2 / 11; display: flex; flex-direction: column; gap: 4px;
+    align-items: center; justify-content: center; text-align: center; padding: 6px;
+    background: rgba(0,0,0,.4); border-radius: 6px; color: #fff;
+}
+.mp-dice { font-size: 16px; min-height: 18px; }
+.mp-you, .mp-them { font-size: 13px; font-weight: 700; }
+.mp-btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 4px 0; }
+.mp-btns .app-btn { font-size: 13px; padding: 7px 12px; }
+.mp-log { font-size: 10px; opacity: .85; max-width: 90%; }
+.mp-tip { font-size: 9px; opacity: .55; }
