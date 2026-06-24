@@ -1,0 +1,11 @@
+/* Icebreakers — a big tappable question card over the video. */
+#ib-card {
+    position: relative; pointer-events: auto; cursor: pointer; user-select: none;
+    width: min(92vw, 520px); min-height: 220px; display: flex; align-items: center; justify-content: center;
+    padding: 28px 26px; border-radius: 16px; background: rgba(0,0,0,.5); backdrop-filter: blur(2px);
+    box-shadow: 0 6px 28px rgba(0,0,0,.5); transition: transform .08s;
+}
+#ib-card:active { transform: scale(.98); }
+.ib-q { font-size: clamp(20px, 4.4vw, 30px); font-weight: 700; color: #fff; text-align: center; line-height: 1.3; text-shadow: 0 1px 4px #000; }
+.ib-n { position: absolute; top: 10px; left: 14px; font-size: 13px; color: rgba(255,255,255,.6); }
+.ib-hint { position: absolute; bottom: 10px; right: 14px; font-size: 12px; color: rgba(255,255,255,.55); }
