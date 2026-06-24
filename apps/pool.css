@@ -1,5 +1,5 @@
 /* Pool */
 #pl-canvas {
     width: min(94vw, 64vh, 720px); aspect-ratio: 700 / 380; touch-action: none; cursor: crosshair;
-    background: #6b3a1f; border-radius: 12px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
+    background: transparent; border-radius: 12px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
 }

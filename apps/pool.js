@@ -65,8 +65,9 @@
 
     const draw = () => {
         g.clearRect(0, 0, W, H);
-        g.fillStyle = '#1f6b3a'; g.fillRect(M-6, M-6, W-2*(M-6), H-2*(M-6));
-        g.fillStyle = 'rgba(0,0,0,.85)'; POCKETS.forEach(([x, y]) => { g.beginPath(); g.arc(x, y, PR-2, 0, 7); g.fill(); });
+        g.fillStyle = 'rgba(80,45,25,.42)'; g.fillRect(0, 0, W, H);                                   // rail (translucent)
+        g.fillStyle = 'rgba(28,95,52,.42)'; g.fillRect(M-6, M-6, W-2*(M-6), H-2*(M-6));               // felt (translucent)
+        g.fillStyle = 'rgba(0,0,0,.55)'; POCKETS.forEach(([x, y]) => { g.beginPath(); g.arc(x, y, PR-2, 0, 7); g.fill(); });
         const fill = { w: '#fff', r: '#e23b3b', y: '#ecc233', k: '#111' };
         for (const b of balls) if (b.on) { g.fillStyle = fill[b.c]; g.beginPath(); g.arc(b.x, b.y, R, 0, 7); g.fill(); g.strokeStyle = 'rgba(0,0,0,.3)'; g.stroke(); }
         if (aiming && balls[0].on) {
