@@ -114,6 +114,8 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Boxing (2-player, Punch-Out style — punch/block/dodge + stamina)
 - [x] Scrabble (private racks; placement/premium/cross-word scoring; words on the honour system — no built-in dictionary)
 - [x] Kart Racer (top-down 3-lap race; boost pads + banana drops)
+- [x] Tetris (2-player versus; clear lines to send garbage, top out to lose)
+- [x] Dirtbike Racer (Excitebike-style; ramps, lean-to-land, turbo/overheat)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
