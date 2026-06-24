@@ -107,6 +107,7 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Snake (versus)
 - [x] Asteroids (co-op)
 - [x] Platform Racer (race to the flag; each client simulates its own avatar)
+- [x] Pool (simplified UK 8-ball; authoritative ball physics)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
