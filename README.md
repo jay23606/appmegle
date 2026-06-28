@@ -116,6 +116,7 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Kart Racer (top-down 3-lap race; boost pads + banana drops)
 - [x] Tetris (2-player versus; clear lines to send garbage, top out to lose)
 - [x] Dirtbike Racer (Excitebike-style; ramps, lean-to-land, turbo/overheat)
+- [x] Ball Roller (3D! three.js translucent ball race; tilt on mobile, keys/drag on laptop)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
