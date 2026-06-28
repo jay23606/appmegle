@@ -1,0 +1,4 @@
+/* Tunnel Flyer (3D) */
+#tn-wrap { position: relative; width: min(96vw, 80vh, 880px); aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden; touch-action: none; cursor: grab; box-shadow: 0 6px 28px rgba(0,0,0,.5); }
+#tn-wrap canvas { display: block; width: 100%; height: 100%; }
+.app-bar .tilt { background: rgba(90,180,255,.55); }
