@@ -17,7 +17,7 @@
     const mulberry32 = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
     let ctx = null, auth = false, role = 'a', raf = 0, wrap = null, statEl = null, enableBtn = null;
-    let THREE, scene, cam, renderer, ballMesh, oppMesh, mazeGroup, wallMat;
+    let THREE, scene, cam, renderer, ballMesh, oppMesh, mazeGroup, wallMat, goalPad, goalBeam;
     let OBST = [], curSeed = 0, mazeBuiltFor = -1;
     let bk = null, opp = { x: startPos.x, z: startPos.z }, keyX = 0, keyZ = 0, tiltX = 0, tiltZ = 0, dragX = 0, dragZ = 0, dragging = false, tiltBase = null;
     let phase = 'wait', countEnd = 0, winner = null, lastT = 0, lastSend = 0, onKey = null, onTilt = null, onResize = null;
@@ -90,8 +90,12 @@
         const grid = new THREE.GridHelper(Math.max(AW, AZ)*2, COLS*2, 0x88aacc, 0x446688); grid.material.transparent = true; grid.material.opacity = 0.16; scene.add(grid);
         wallMat = new THREE.MeshStandardMaterial({ color: 0x66aaff, transparent: true, opacity: 0.3 });
         mazeGroup = new THREE.Group(); scene.add(mazeGroup);
-        const goal = new THREE.Mesh(new THREE.CylinderGeometry(CELL*0.34, CELL*0.34, 0.25, 24), new THREE.MeshStandardMaterial({ color: 0x44ee88, transparent: true, opacity: 0.6, emissive: 0x22aa55, emissiveIntensity: 0.6 }));
-        goal.position.set(goalPos.x, 0.12, goalPos.z); scene.add(goal);
+        // highlighted goal zone: a glowing floor pad filling the goal cell...
+        goalPad = new THREE.Mesh(new THREE.BoxGeometry(CELL*0.92, 0.06, CELL*0.92), new THREE.MeshStandardMaterial({ color: 0x55ff99, transparent: true, opacity: 0.55, emissive: 0x33ff88, emissiveIntensity: 0.8 }));
+        goalPad.position.set(goalPos.x, 0.04, goalPos.z); scene.add(goalPad);
+        // ...plus a soft light column rising above the walls so it's findable from anywhere
+        goalBeam = new THREE.Mesh(new THREE.CylinderGeometry(CELL*0.32, CELL*0.32, 8, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0x55ff99, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false }));
+        goalBeam.position.set(goalPos.x, 4, goalPos.z); scene.add(goalBeam);
         const mkBall = (col, op) => new THREE.Mesh(new THREE.SphereGeometry(R, 28, 22), new THREE.MeshPhysicalMaterial({ color: col, transparent: true, opacity: op, roughness: 0.12, metalness: 0, clearcoat: 1, emissive: col, emissiveIntensity: 0.14 }));
         ballMesh = mkBall(role === 'a' ? 0x5db4ff : 0xff9d3d, 0.6); oppMesh = mkBall(role === 'a' ? 0xff9d3d : 0x5db4ff, 0.38);
         scene.add(ballMesh); scene.add(oppMesh);
@@ -103,6 +107,9 @@
     const render3 = () => {
         if (!renderer) return;
         if (mazeBuiltFor !== curSeed && OBST.length) { buildMaze(); mazeBuiltFor = curSeed; }
+        const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 320);   // gentle glow pulse on the goal
+        if (goalPad) goalPad.material.emissiveIntensity = 0.5 + 0.7 * pulse;
+        if (goalBeam) goalBeam.material.opacity = 0.1 + 0.16 * pulse;
         if (bk) { ballMesh.position.set(bk.x, R, bk.z); ballMesh.rotation.x = bk.rx; ballMesh.rotation.z = bk.rz; }
         oppMesh.position.set(opp.x, R, opp.z);
         renderer.render(scene, cam);
