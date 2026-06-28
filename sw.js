@@ -1,6 +1,6 @@
 // Minimal SW: enables PWA install. Network-first so the live app, CDN scripts,
 // and Firebase signaling are never served stale; falls back to cache offline.
-const CACHE = 'appmegle-v17';
+const CACHE = 'appmegle-v18';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './apps/chess.js', './apps/chess.css',
@@ -30,6 +30,12 @@ const ASSETS = [
   './apps/tetris.js', './apps/tetris.css',
   './apps/dirtbike.js', './apps/dirtbike.css',
   './apps/ballroller.js', './apps/ballroller.css',
+  './apps/qubic.js', './apps/qubic.css',
+  './apps/stack.js', './apps/stack.css',
+  './apps/minigolf.js', './apps/minigolf.css',
+  './apps/tunnel.js', './apps/tunnel.css',
+  './apps/sumo.js', './apps/sumo.css',
+  './apps/helix.js', './apps/helix.css',
   './icon-192.png', './icon-512.png'
 ];
 
