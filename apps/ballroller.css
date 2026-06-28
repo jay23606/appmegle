@@ -1,6 +1,6 @@
 /* Ball Roller (3D) — transparent three.js canvas so the video shows through. */
 #br-wrap {
-    position: relative; width: min(94vw, 70vh, 760px); aspect-ratio: 16 / 11;
+    position: relative; width: min(97vw, 88vh, 1000px); aspect-ratio: 3 / 2;
     border-radius: 10px; overflow: hidden; touch-action: none; cursor: grab;
     box-shadow: 0 6px 28px rgba(0,0,0,.55);
 }
