@@ -123,6 +123,8 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Tunnel Flyer (3D, fly through rings, seed-synced tunnel)
 - [x] Marble Sumo (3D, bump your opponent off the platform)
 - [x] Helix Descent (3D, rotate the tower to drop through the gaps)
+- [x] Pac-Man (2-player dot race; shared maze + ghosts, procedural braided maze)
+- [x] Bubble Bobble (2-player co-op; trap enemies in bubbles and pop them)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps

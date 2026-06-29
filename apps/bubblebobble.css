@@ -1,0 +1,6 @@
+/* Bubble Bobble */
+#bb-canvas { width: min(94vw, 70vh, 560px); aspect-ratio: 4 / 3; image-rendering: pixelated; background: rgba(10,10,30,.42); border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.6); }
+#bb-pad { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+#bb-pad button { padding: 10px 14px; border: 0; border-radius: 8px; background: rgba(255,255,255,.85); color: #111; font-size: 15px; font-weight: 700; cursor: pointer; touch-action: none; }
+#bb-pad button[data-k="s"] { background: #5db4ff; color: #fff; }
+#bb-pad button[data-k="j"] { background: #3a7; color: #fff; }
