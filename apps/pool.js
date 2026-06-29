@@ -71,13 +71,22 @@
         const fill = { w: '#fff', r: '#e23b3b', y: '#ecc233', k: '#111' };
         for (const b of balls) if (b.on) { g.fillStyle = fill[b.c]; g.beginPath(); g.arc(b.x, b.y, R, 0, 7); g.fill(); g.strokeStyle = 'rgba(0,0,0,.3)'; g.stroke(); }
         if (aiming && balls[0].on) {
-            const dx = balls[0].x - aim.x, dy = balls[0].y - aim.y, d = Math.hypot(dx, dy) || 1;
-            g.strokeStyle = 'rgba(255,255,255,.8)'; g.lineWidth = 2; g.setLineDash([6, 6]);
-            g.beginPath(); g.moveTo(balls[0].x, balls[0].y); g.lineTo(balls[0].x + dx/d*Math.min(d, 200), balls[0].y + dy/d*Math.min(d, 200)); g.stroke(); g.setLineDash([]);
+            const cue = balls[0], dx = cue.x - aim.x, dy = cue.y - aim.y, d = Math.hypot(dx, dy) || 1;
+            const sdx = dx/d, sdy = dy/d, pdx = -sdx, pdy = -sdy, power = Math.min(d, 170)/170;   // shot dir vs cue (butt) dir
+            // aim guide: where the ball will travel
+            g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 2; g.setLineDash([7, 7]);
+            g.beginPath(); g.moveTo(cue.x + sdx*R, cue.y + sdy*R); g.lineTo(cue.x + sdx*250, cue.y + sdy*250); g.stroke(); g.setLineDash([]);
+            // cue stick behind the ball, drawn back proportional to power
+            const pull = 7 + power*42, tx = cue.x + pdx*(R + pull), ty = cue.y + pdy*(R + pull), bx = tx + pdx*180, by = ty + pdy*180;
+            g.lineCap = 'round';
+            g.lineWidth = 7; g.strokeStyle = '#7a5a32'; g.beginPath(); g.moveTo(tx, ty); g.lineTo(bx, by); g.stroke();             // shaft
+            g.lineWidth = 7; g.strokeStyle = '#d8b878'; g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx + pdx*44, ty + pdy*44); g.stroke();   // pale wood near tip
+            g.lineWidth = 9; g.strokeStyle = 'rgb(' + ((90 + 170*power)|0) + ',' + ((205 - 165*power)|0) + ',90)'; g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx + pdx*9, ty + pdy*9); g.stroke();   // tip, green→red by power
+            g.lineCap = 'butt';
         }
         const myCol = me === 'a' ? 'r' : 'y';
         if (over) statEl.textContent = result === me ? '🎱 You win!' : 'You lose';
-        else statEl.textContent = 'You: ' + (7 - colorsOn(myCol)) + '/7 ' + (myCol === 'r' ? 'red' : 'yellow') + ' · ' + (turn === me ? (phase === 'aim' ? 'your shot — drag to aim' : 'rolling…') : 'their shot');
+        else statEl.textContent = 'You: ' + (7 - colorsOn(myCol)) + '/7 ' + (myCol === 'r' ? 'red' : 'yellow') + ' · ' + (turn === me ? (phase === 'aim' ? 'your shot — drag back behind the ball to aim & power' : 'rolling…') : 'their shot');
     };
 
     const shoot = (vx, vy) => {
