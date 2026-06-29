@@ -1,8 +1,9 @@
 // Video Puzzle (2-player race) for appmegle. Your live camera feed is sliced into an NxN
 // grid of tiles and scrambled — click/tap two tiles to swap them and reassemble your face.
 // The tiles are drawn live from the video each frame, so the pieces move. Each player solves
-// their OWN camera (always available), but the caller picks the grid size + a shared scramble
-// seed so both start equally jumbled. First to solve wins (caller arbitrates). Caller = player 1.
+// their PARTNER's face (the remote stream; falls back to your own camera if it isn't flowing),
+// and the caller picks the grid size + a shared scramble seed so both start equally jumbled.
+// First to solve wins (caller arbitrates). Caller = player 1.
 (function () {
     const mulberry32 = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
     const SZ = 480;
@@ -28,7 +29,7 @@
     const swap = (s1, s2) => { [tileAt[s1], tileAt[s2]] = [tileAt[s2], tileAt[s1]]; ctx.send({ t: 'prog', c: correct() }); if (tileAt.every((h, s) => h === s)) onSolve(); else status(); };
     const pick = (s) => { if (over) return; if (sel === -1) { sel = s; } else if (sel === s) { sel = -1; } else { swap(sel, s); sel = -1; } };
 
-    const srcVideo = () => { if (vidL && vidL.videoWidth) return vidL; if (vidR && vidR.videoWidth) return vidR; return null; };
+    const srcVideo = () => { if (vidR && vidR.videoWidth) return vidR; if (vidL && vidL.videoWidth) return vidL; return null; };   // partner's face first, fall back to own
     const draw = () => {
         if (!g) return; g.clearRect(0, 0, SZ, SZ);
         const v = srcVideo(), tile = SZ / N;
