@@ -1,0 +1,9 @@
+/* Spirit Shooter */
+#sh-canvas { width: min(96vw, 66vh, 620px); aspect-ratio: 620 / 440; background: rgba(15,10,30,.4); border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.6); }
+#sh-pad { display: grid; grid-template-columns: repeat(3, 46px); grid-template-rows: 46px 46px 46px; gap: 5px; justify-content: center; }
+#sh-pad button { border: 0; border-radius: 8px; background: rgba(255,255,255,.85); color: #111; font-size: 17px; cursor: pointer; touch-action: none; }
+#sh-pad button[data-k="up"] { grid-column: 2; grid-row: 1; }
+#sh-pad button[data-k="left"] { grid-column: 1; grid-row: 2; }
+#sh-pad button[data-k="spin"] { grid-column: 2; grid-row: 2; background: #b59bff; }
+#sh-pad button[data-k="right"] { grid-column: 3; grid-row: 2; }
+#sh-pad button[data-k="down"] { grid-column: 2; grid-row: 3; }
