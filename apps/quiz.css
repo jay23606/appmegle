@@ -1,0 +1,10 @@
+/* Compatibility Quiz */
+#qz { gap: 12px; }
+#qz-q { font-size: clamp(18px, 4vw, 26px); font-weight: 700; color: #fff; text-align: center; text-shadow: 0 1px 4px #000; min-height: 1.2em; }
+#qz-opts { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-width: 560px; }
+.qz-opt { padding: 16px 22px; font-size: 17px; font-weight: 700; border: 0; border-radius: 12px; cursor: pointer; background: rgba(0,0,0,.5); color: #fff; min-width: 140px; }
+.qz-opt.mine { box-shadow: inset 0 0 0 3px #ffd24a; }
+.qz-opt.a { box-shadow: inset 0 0 0 3px #5db4ff; } .qz-opt.b { box-shadow: inset 0 0 0 3px #ff9d3d; }
+.qz-opt.a.b { box-shadow: inset 0 0 0 3px #5db4ff, inset 0 0 0 7px #ff9d3d; }
+.qz-opt:disabled { cursor: default; }
+#qz-res { font-size: 14px; color: #cde; text-shadow: 0 1px 3px #000; min-height: 1.2em; text-align: center; }
