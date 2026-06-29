@@ -130,6 +130,8 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Trivia (buzz-in head-to-head; live questions from the OpenTDB API)
 - [x] Bomberman (2-player versus; bombs, soft blocks, power-ups)
 - [x] Tank Duel (turn-based artillery; aim/power, wind, destructible terrain)
+- [x] Fruit Ninja (motion-controlled — slice flying fruit by waving your hand at the camera)
+- [x] Webcam Volleyball (motion-controlled — bump the ball between both players' camera feeds)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
