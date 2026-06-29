@@ -125,7 +125,7 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Helix Descent (3D, rotate the tower to drop through the gaps)
 - [x] Pac-Man (2-player dot race; shared maze + ghosts, procedural braided maze)
 - [x] Bubble Bobble (2-player co-op; trap enemies in bubbles and pop them)
-- [x] Video Puzzle (race to reassemble your partner's live face — tile-swap from the video stream)
+- [x] Video Puzzle (race to reassemble your partner's live face; progressively harder rounds, first to 5 wins)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
