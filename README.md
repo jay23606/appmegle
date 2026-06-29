@@ -126,6 +126,10 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Pac-Man (2-player dot race; shared maze + ghosts, procedural braided maze)
 - [x] Bubble Bobble (2-player co-op; trap enemies in bubbles and pop them)
 - [x] Video Puzzle (race to reassemble your partner's live face; progressively harder rounds, first to 5 wins)
+- [x] Compatibility Quiz (answer simultaneously, score how often you match)
+- [x] Trivia (buzz-in head-to-head; live questions from the OpenTDB API)
+- [x] Bomberman (2-player versus; bombs, soft blocks, power-ups)
+- [x] Tank Duel (turn-based artillery; aim/power, wind, destructible terrain)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps
