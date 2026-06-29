@@ -132,6 +132,7 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Tank Duel (turn-based artillery; aim/power, wind, destructible terrain)
 - [x] Fruit Ninja (motion-controlled — slice flying fruit by waving your hand at the camera)
 - [x] Webcam Volleyball (motion-controlled — bump the ball between both players' camera feeds)
+- [x] Heads Up! (word hidden from the guesser, shown over their forehead to the clue-giver; live-voice clues)
 - [ ] More apps — see ideas below
 
 ### Ideas for more apps

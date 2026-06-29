@@ -1,0 +1,12 @@
+/* Heads Up! */
+#hu-band { position: absolute; top: 7%; left: 0; right: 0; text-align: center; pointer-events: none; font-size: clamp(28px, 7vw, 64px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000, 0 0 24px rgba(0,0,0,.6); padding: 0 12px; }
+#hu-band.hidden { display: none; }
+#hu { gap: 14px; }
+#hu-cat { background: #2a2a2a; color: #fff; border: 0; padding: 8px 10px; font-size: 14px; border-radius: 6px; cursor: pointer; }
+#hu-body { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.hu-big { font-size: clamp(40px, 12vw, 96px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000; }
+.hu-msg { font-size: 16px; color: #fff; text-shadow: 0 1px 4px #000; text-align: center; max-width: 90vw; }
+.hu-cnt { font-size: 14px; color: #cde; text-shadow: 0 1px 3px #000; }
+#hu-btns { display: flex; gap: 16px; }
+#hu-got { padding: 18px 30px; font-size: 20px; font-weight: 800; border: 0; border-radius: 14px; cursor: pointer; background: #2a9d4a; color: #fff; }
+#hu-pass { padding: 18px 30px; font-size: 20px; font-weight: 800; border: 0; border-radius: 14px; cursor: pointer; background: #c89a2a; color: #fff; }
