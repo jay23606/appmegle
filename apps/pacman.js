@@ -4,7 +4,7 @@
 // Get the most dots when the maze is cleared. A fresh procedural (braided, loopy) maze each
 // game. Caller = blue Pac, answerer = orange.
 (function () {
-    const CELL = 22, MC = 9, MR = 7, GW = 2*MC+1, GH = 2*MR+1, SPD = 5.5, GSPD = 4.8, FRIGHT = 6, SEND = 40;
+    const CELL = 22, MC = 9, MR = 7, GW = 2*MC+1, GH = 2*MR+1, SPD = 5.5, GSPD = 4.8, FRIGHT = 6, SEND = 33;
     const DV = [[0,-1],[1,0],[0,1],[-1,0]];
     const mulberry32 = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
@@ -81,9 +81,32 @@
             else if (p.stun <= 0) { p.stun = 1.5; p.gx = p.spawn[0]; p.gy = p.spawn[1]; p.nx = p.gx; p.ny = p.gy; p.x = p.gx; p.y = p.gy; p.t = 0; p.dir = -1; }
         } }
     };
-    const snap = () => ({ pa: { x: pacs.a.x, y: pacs.a.y, st: pacs.a.stun > 0 }, pb: { x: pacs.b.x, y: pacs.b.y, st: pacs.b.stun > 0 }, gh: ghosts.map(g2 => ({ x: g2.x, y: g2.y, c: g2.col })), s: score, f: fright, over, winner });
+    const snap = () => ({ pa: { x: pacs.a.x, y: pacs.a.y, st: pacs.a.stun > 0, d: pacs.a.dir }, pb: { x: pacs.b.x, y: pacs.b.y, st: pacs.b.stun > 0, d: pacs.b.dir }, gh: ghosts.map(g2 => ({ x: g2.x, y: g2.y, c: g2.col, d: g2.dir })), s: score, f: fright, over, winner });
     const sync = () => { view = snap(); ctx.send({ t: 's', v: view }); };
 
+    const DIRANG = [-Math.PI/2, 0, Math.PI/2, Math.PI], DV2 = [[0,-1],[1,0],[0,1],[-1,0]];
+    let rp = null;
+    const lerpTo = (s) => {                              // smooth the ~30Hz state on the non-authoritative side
+        if (!rp) rp = { pa: { x: s.pa.x, y: s.pa.y }, pb: { x: s.pb.x, y: s.pb.y }, gh: s.gh.map(o => ({ x: o.x, y: o.y })) };
+        const ease = (o, t) => { const dx = t.x - o.x, dy = t.y - o.y; if (Math.hypot(dx, dy) > 2.2) { o.x = t.x; o.y = t.y; } else { o.x += dx*0.35; o.y += dy*0.35; } };
+        ease(rp.pa, s.pa); ease(rp.pb, s.pb); s.gh.forEach((o, i) => { if (!rp.gh[i]) rp.gh[i] = { x: o.x, y: o.y }; ease(rp.gh[i], o); });
+        return { pa: { x: rp.pa.x, y: rp.pa.y, st: s.pa.st, d: s.pa.d }, pb: { x: rp.pb.x, y: rp.pb.y, st: s.pb.st, d: s.pb.d }, gh: s.gh.map((o, i) => ({ x: rp.gh[i].x, y: rp.gh[i].y, c: o.c, d: o.d })), s: s.s, f: s.f, over: s.over, winner: s.winner };
+    };
+    const pac = (p, col) => {
+        const cx = p.x*CELL+CELL/2, cy = p.y*CELL+CELL/2, r = CELL*0.42;
+        if (p.st) { g.fillStyle = 'rgba(255,255,255,.4)'; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill(); return; }
+        const ang = DIRANG[p.d >= 0 ? p.d : 1], m = 0.06 + 0.30*(0.5 + 0.5*Math.sin(performance.now()/90));   // chomp
+        g.fillStyle = col; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, r, ang + m, ang + Math.PI*2 - m); g.closePath(); g.fill();
+        g.fillStyle = '#10202e'; const ea = ang - 1.45; g.beginPath(); g.arc(cx + Math.cos(ea)*r*0.42, cy + Math.sin(ea)*r*0.42, r*0.14, 0, 7); g.fill();
+    };
+    const ghost = (gh, fr) => {
+        const cx = gh.x*CELL+CELL/2, cy = gh.y*CELL+CELL/2, r = CELL*0.4;
+        g.fillStyle = fr ? '#3344ff' : gh.c; g.beginPath(); g.arc(cx, cy, r, Math.PI, 2*Math.PI);
+        g.lineTo(cx + r, cy + r*0.8); g.lineTo(cx + r*0.5, cy + r*0.45); g.lineTo(cx, cy + r*0.8); g.lineTo(cx - r*0.5, cy + r*0.45); g.lineTo(cx - r, cy + r*0.8); g.closePath(); g.fill();
+        const dv = DV2[gh.d >= 0 ? gh.d : 1];
+        g.fillStyle = '#fff'; g.beginPath(); g.arc(cx - r*0.34, cy - r*0.12, r*0.3, 0, 7); g.arc(cx + r*0.34, cy - r*0.12, r*0.3, 0, 7); g.fill();
+        g.fillStyle = fr ? '#fff' : '#1133cc'; g.beginPath(); g.arc(cx - r*0.34 + dv[0]*r*0.15, cy - r*0.12 + dv[1]*r*0.15, r*0.14, 0, 7); g.arc(cx + r*0.34 + dv[0]*r*0.15, cy - r*0.12 + dv[1]*r*0.15, r*0.14, 0, 7); g.fill();
+    };
     const draw = () => {
         if (!g) return; g.clearRect(0, 0, canvas.width, canvas.height);
         if (grid.length) for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
@@ -91,10 +114,8 @@
         }
         g.fillStyle = '#ffd'; dots.forEach(k => { const [x, y] = k.split(',').map(Number); g.beginPath(); g.arc(x*CELL+CELL/2, y*CELL+CELL/2, 2, 0, 7); g.fill(); });
         g.fillStyle = '#ffd'; pellets.forEach(k => { const [x, y] = k.split(',').map(Number); g.beginPath(); g.arc(x*CELL+CELL/2, y*CELL+CELL/2, 5, 0, 7); g.fill(); });
-        const s = auth ? snap() : view; if (!s) { statEl.textContent = 'Waiting…'; return; }
-        const pac = (p, col) => { g.fillStyle = p.st ? 'rgba(255,255,255,.4)' : col; g.beginPath(); g.arc(p.x*CELL+CELL/2, p.y*CELL+CELL/2, CELL*0.42, 0.3, Math.PI*2-0.3); g.lineTo(p.x*CELL+CELL/2, p.y*CELL+CELL/2); g.fill(); };
-        pac(s.pa, '#5db4ff'); pac(s.pb, '#ff9d3d');
-        s.gh.forEach(gh => { g.fillStyle = s.f > 0 ? '#3344ff' : gh.c; g.beginPath(); g.arc(gh.x*CELL+CELL/2, gh.y*CELL+CELL/2, CELL*0.4, Math.PI, 0); g.lineTo(gh.x*CELL+CELL*0.9, gh.y*CELL+CELL*0.85); g.lineTo(gh.x*CELL+CELL*0.1, gh.y*CELL+CELL*0.85); g.fill(); });
+        const s = auth ? snap() : (view ? lerpTo(view) : null); if (!s) { statEl.textContent = 'Waiting…'; return; }
+        s.gh.forEach(gh => ghost(gh, s.f > 0)); pac(s.pa, '#5db4ff'); pac(s.pb, '#ff9d3d');
         statEl.textContent = s.over ? (s.winner === 'tie' ? 'Tie ' : s.winner === me ? '🏆 You win ' : 'You lose ') + s.s[me] + '–' + s.s[me==='a'?'b':'a'] : 'You ' + s.s[me] + ' · Them ' + s.s[me==='a'?'b':'a'] + (s.f > 0 ? ' · ghosts edible!' : '');
     };
     const loop = (t) => {
@@ -124,7 +145,7 @@
             if (auth) newGame(); else draw();
             lastT = performance.now(); raf = requestAnimationFrame(loop);
         },
-        unmount() { cancelAnimationFrame(raf); window.removeEventListener('keydown', onKey); ctx = canvas = g = statEl = null; pacs = { a: null, b: null }; ghosts = []; },
+        unmount() { cancelAnimationFrame(raf); window.removeEventListener('keydown', onKey); ctx = canvas = g = statEl = null; pacs = { a: null, b: null }; ghosts = []; rp = null; },
         onData(msg) {
             if (msg.t === 'maze' && !auth) parse(msg.grid.split('|'));
             else if (msg.t === 's' && !auth) { view = msg.v; }
