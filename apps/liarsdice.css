@@ -1,0 +1,12 @@
+/* Liar's Dice */
+#ld { gap: 12px; width: min(94vw, 480px); }
+#ld-body { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; }
+.ld-cup { text-align: center; }
+.ld-lbl { font-size: 12px; color: #cde; text-shadow: 0 1px 3px #000; }
+.ld-dice { font-size: 44px; color: #fff; letter-spacing: 4px; }
+.ld-bid, .ld-msg, .ld-rev { font-size: 15px; color: #fff; text-shadow: 0 1px 3px #000; text-align: center; }
+.ld-bid b { color: #ffd24a; }
+.ld-controls { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.ld-row { display: flex; align-items: center; gap: 6px; color: #fff; }
+.ld-row select { padding: 8px; font-size: 16px; border: 0; border-radius: 6px; background: rgba(20,20,30,.85); color: #fff; }
+#ld-liar { background: #c0392b; font-size: 18px; }
