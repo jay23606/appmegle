@@ -145,7 +145,9 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Codenames Duet (co-op; secret keys, one-word clues, find the agents)
 - [x] Quoridor (race your pawn while dropping walls; path always guaranteed)
 - [x] Backgammon (full rules: dice, doubles, bar, hitting, bearing off)
-- [ ] More apps — building toward 25; remaining: Liar's Dice, Spaceteam, Scavenger Hunt, Make Me Laugh, Scream Meter, Hold the Note, Pictionary, Mirror Match, Hole in the Wall, Reaction Duel, Red Light Green Light, Watch Together, Co-op Platformer, AR Sticker Slap
+- [x] Scream Meter (mic — yell loudest to win)
+- [x] Hold the Note (mic — sustain one note the longest)
+- [ ] More apps — building toward 25; remaining: Liar's Dice, Spaceteam, Scavenger Hunt, Make Me Laugh, Pictionary, Mirror Match, Hole in the Wall, Reaction Duel, Red Light Green Light, Watch Together, Co-op Platformer, AR Sticker Slap
 
 ### Ideas for more apps
 
