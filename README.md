@@ -150,7 +150,11 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Reaction Duel (motion — first to flinch on GO wins; false-start loses)
 - [x] Red Light Green Light (motion — move on green, freeze on red)
 - [x] Mirror Match (motion — co-op sync meter, mirror your partner)
-- [ ] More apps — building toward 25; remaining: Liar's Dice, Spaceteam, Scavenger Hunt, Make Me Laugh, Pictionary, Hole in the Wall, Watch Together, Co-op Platformer, AR Sticker Slap
+- [x] Liar's Dice (Perudo — hidden dice, bidding, calling bluffs)
+- [x] Make Me Laugh (30s to crack your partner; they tap if they laugh)
+- [x] Scavenger Hunt (race to show a real object matching the prompt)
+- [x] Watch Together (synced YouTube — host controls, both watch in lockstep)
+- [ ] More apps — building toward 25; remaining: Spaceteam, Pictionary, Hole in the Wall, Co-op Platformer, AR Sticker Slap
 
 ### Ideas for more apps
 
