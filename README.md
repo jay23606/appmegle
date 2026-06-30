@@ -140,7 +140,10 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Couple's Quiz (guess what your partner will pick)
 - [x] Taboo (clue a word without saying the banned ones; partner buzzes)
 - [x] Gomoku (five-in-a-row on a 15x15 board)
-- [ ] More apps — building toward 25; remaining: Liar's Dice, Spaceteam, Scavenger Hunt, Make Me Laugh, Scream Meter, Hold the Note, Pictionary, Mirror Match, Hole in the Wall, Reaction Duel, Red Light Green Light, Quoridor, Backgammon, Mancala, Codenames Duet, Watch Together, Categories, Co-op Platformer, AR Sticker Slap
+- [x] Mancala (Kalah — sow, capture, extra turns)
+- [x] Categories (Scattergories — letter + categories, matching answers cancel)
+- [x] Codenames Duet (co-op; secret keys, one-word clues, find the agents)
+- [ ] More apps — building toward 25; remaining: Liar's Dice, Spaceteam, Scavenger Hunt, Make Me Laugh, Scream Meter, Hold the Note, Pictionary, Mirror Match, Hole in the Wall, Reaction Duel, Red Light Green Light, Quoridor, Backgammon, Watch Together, Co-op Platformer, AR Sticker Slap
 
 ### Ideas for more apps
 
