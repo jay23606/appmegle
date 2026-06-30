@@ -1,0 +1,4 @@
+/* Quoridor */
+#qd-canvas { width: min(94vw, 78vh, 500px); aspect-ratio: 1; border-radius: 8px; touch-action: none; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,.55); }
+.qd-hint { font-size: 11px; color: rgba(255,255,255,.55); text-shadow: 0 1px 3px #000; text-align: center; max-width: 92vw; }
+#qd-mode { background: #6a4fb3; }
