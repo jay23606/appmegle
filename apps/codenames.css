@@ -1,0 +1,12 @@
+/* Codenames Duet */
+#cn { gap: 10px; width: min(96vw, 560px); }
+#cn-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; }
+.cn-tile { aspect-ratio: 5/3; border: 0; border-radius: 6px; background: rgba(230,225,210,.92); color: #222; font-size: clamp(9px, 2.4vw, 14px); font-weight: 700; cursor: default; padding: 2px; }
+.cn-tile.mg { box-shadow: inset 0 0 0 3px #3a8f4a; } .cn-tile.mx { box-shadow: inset 0 0 0 3px #c0392b; background: rgba(200,180,180,.92); }
+.cn-tile.found { background: #3a8f4a; color: #fff; box-shadow: none; }
+.cn-tile.tappable { cursor: pointer; }
+.cn-tile.tappable:hover { outline: 3px solid #ffd24a; }
+#cn-ctrl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+#cn-w { padding: 10px; font-size: 15px; border: 0; border-radius: 7px; background: rgba(20,20,30,.85); color: #fff; }
+#cn-n { padding: 10px; border: 0; border-radius: 7px; background: rgba(20,20,30,.85); color: #fff; }
+.cn-msg { font-size: 14px; color: #cde; text-shadow: 0 1px 3px #000; }

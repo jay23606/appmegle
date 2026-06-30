@@ -1,0 +1,9 @@
+/* Mancala */
+#mn-board { display: flex; align-items: stretch; gap: 8px; width: min(94vw, 600px); }
+.mn-store { width: 56px; border-radius: 16px; background: rgba(120,80,40,.5); color: #fff; font-size: 26px; font-weight: 800; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.mn-store small { font-size: 10px; opacity: .7; font-weight: 400; }
+.mn-store.you { background: rgba(60,120,180,.5); }
+.mn-mid { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 16px; background: rgba(90,60,30,.4); }
+.mn-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.mn-pit { aspect-ratio: 1; border-radius: 50%; background: rgba(0,0,0,.4); color: #fff; font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.mn-pit.on { background: rgba(60,140,90,.7); cursor: pointer; box-shadow: inset 0 0 0 2px #6f9; }
