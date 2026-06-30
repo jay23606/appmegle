@@ -1,0 +1,2 @@
+/* Backgammon */
+#bg-canvas { width: min(96vw, 64vh, 660px); aspect-ratio: 660 / 460; touch-action: none; cursor: pointer; border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.6); }
