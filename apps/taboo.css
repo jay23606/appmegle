@@ -1,0 +1,14 @@
+/* Taboo */
+#tb { gap: 12px; width: min(92vw, 460px); }
+#tb-body { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.tb-msg { font-size: 15px; color: #fff; text-shadow: 0 1px 3px #000; text-align: center; max-width: 90%; }
+.tb-card { background: rgba(255,255,255,.95); border-radius: 14px; padding: 16px 24px; text-align: center; box-shadow: 0 4px 18px rgba(0,0,0,.5); }
+.tb-word { font-size: 30px; font-weight: 800; color: #111; }
+.tb-no { font-size: 12px; color: #c0392b; font-weight: 700; margin-top: 6px; }
+.tb-ban { font-size: 16px; color: #c0392b; text-decoration: line-through; }
+.tb-big { font-size: clamp(34px, 10vw, 64px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000; }
+#tb-btns { display: flex; gap: 14px; }
+#tb-got { padding: 14px 24px; font-size: 18px; font-weight: 800; border: 0; border-radius: 12px; background: #2a9d4a; color: #fff; cursor: pointer; }
+#tb-skip { padding: 14px 24px; font-size: 18px; font-weight: 800; border: 0; border-radius: 12px; background: #888; color: #fff; cursor: pointer; }
+#tb-buzz { padding: 20px 36px; font-size: 22px; font-weight: 800; border: 0; border-radius: 14px; background: #e23b3b; color: #fff; cursor: pointer; }
+.tb-cnt { font-size: 14px; color: #cde; text-shadow: 0 1px 3px #000; }
