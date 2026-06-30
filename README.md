@@ -134,7 +134,13 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Webcam Volleyball (motion-controlled — bump the ball between both players' camera feeds)
 - [x] Heads Up! (word hidden from the guesser, shown over their forehead to the clue-giver; live-voice clues)
 - [x] Spirit Shooter (2-player co-op top-down shooter, Pocky & Rocky-style; auto-aim, spin-blast, boss)
-- [ ] More apps — see ideas below
+- [x] Story Builder (take turns adding a line to a shared story)
+- [x] Two Truths & a Lie (write three, spot the lie)
+- [x] Truth or Dare (dares on camera, truths out loud)
+- [x] Couple's Quiz (guess what your partner will pick)
+- [x] Taboo (clue a word without saying the banned ones; partner buzzes)
+- [x] Gomoku (five-in-a-row on a 15x15 board)
+- [ ] More apps — building toward 25; remaining: Liar's Dice, Spaceteam, Scavenger Hunt, Make Me Laugh, Scream Meter, Hold the Note, Pictionary, Mirror Match, Hole in the Wall, Reaction Duel, Red Light Green Light, Quoridor, Backgammon, Mancala, Codenames Duet, Watch Together, Categories, Co-op Platformer, AR Sticker Slap
 
 ### Ideas for more apps
 

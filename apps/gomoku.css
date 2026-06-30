@@ -1,0 +1,2 @@
+/* Gomoku */
+#gm-canvas { width: min(94vw, 82vh, 420px); aspect-ratio: 1; border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.55); }

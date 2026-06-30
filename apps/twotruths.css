@@ -1,0 +1,12 @@
+/* Two Truths & a Lie */
+#tt { gap: 10px; width: min(92vw, 520px); }
+#tt-body { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.tt-msg { font-size: 15px; color: #fff; text-shadow: 0 1px 3px #000; text-align: center; }
+.tt-in { padding: 11px; font-size: 15px; border: 0; border-radius: 8px; background: rgba(20,20,30,.8); color: #fff; }
+#tt-lie { display: flex; gap: 10px; justify-content: center; }
+.tt-lb { width: 44px; height: 44px; border: 0; border-radius: 8px; background: rgba(0,0,0,.5); color: #fff; font-size: 18px; cursor: pointer; }
+.tt-lb.sel { box-shadow: inset 0 0 0 3px #ffd24a; }
+.tt-opt { padding: 14px; font-size: 16px; border: 0; border-radius: 10px; background: rgba(0,0,0,.5); color: #fff; cursor: pointer; text-align: left; }
+.tt-stat { padding: 12px; border-radius: 10px; background: rgba(0,0,0,.45); color: #fff; font-size: 15px; }
+.tt-stat.lie { box-shadow: inset 0 0 0 2px #e25; } .tt-stat.true { box-shadow: inset 0 0 0 2px #3a8; }
+.tt-stat.picked { outline: 3px solid #ffd24a; }
