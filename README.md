@@ -169,7 +169,11 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] I Spy Your Room (spy something in the PARTNER's video; they hunt their own room)
 - [x] Hum That Tune (hum a famous song, no words; partner guesses out loud)
 - [x] What's That Sound? (foley — make a sound with a real object; partner guesses what made it)
-- [ ] Second wave — 11 remaining: Portrait Duel, Face Doodle, Exquisite Corpse, Fireworks Finale, Shadow Theater, High-Five Replay, Siren Flight, Theremin Duet, Bomb Squad, Two-Key Escape Room, Egg Buddy
+- [x] Portrait Duel (75s to draw each other from the live feed; simultaneous reveal + star ratings)
+- [x] Face Doodle (draw/stamp on your partner's live face; syncs both ways)
+- [x] Exquisite Corpse (fold-over monster: head → torso → legs → feet, big reveal)
+- [x] Fireworks Finale (co-design shells, launch one synchronized show with sound)
+- [ ] Second wave — 7 remaining: Shadow Theater, High-Five Replay, Siren Flight, Theremin Duet, Bomb Squad, Two-Key Escape Room, Egg Buddy
 
 ### Ideas for more apps
 

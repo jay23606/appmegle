@@ -1,0 +1,5 @@
+/* Exquisite Corpse */
+#ec { gap: 10px; }
+#ec-body { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+#ec-canvas { width: min(72vw, 46vh, 300px); aspect-ratio: 300/520; border-radius: 10px; touch-action: none; cursor: crosshair; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+.ec-hint { font-size: 12px; color: rgba(255,255,255,.6); text-shadow: 0 1px 3px #000; text-align: center; }

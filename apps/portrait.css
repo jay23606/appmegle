@@ -1,0 +1,11 @@
+/* Portrait Duel */
+#pd { gap: 10px; }
+#pd-body { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pd-canvas { background: rgba(15,20,40,.6); border-radius: 10px; touch-action: none; cursor: crosshair; box-shadow: 0 6px 24px rgba(0,0,0,.5); width: min(70vw, 46vh, 300px); aspect-ratio: 280/340; }
+.pd-small { width: min(42vw, 36vh, 230px); }
+.pd-side { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.pd-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pd-lbl { font-size: 13px; color: #fff; text-shadow: 0 1px 3px #000; }
+.pd-msg { font-size: 15px; color: #fff; text-shadow: 0 1px 4px #000; text-align: center; }
+.pd-stars { font-size: 26px; color: rgba(255,255,255,.35); cursor: pointer; user-select: none; }
+.pd-star.pd-on { color: #ffd24a; }

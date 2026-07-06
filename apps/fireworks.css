@@ -1,0 +1,11 @@
+/* Fireworks Finale */
+#fw { gap: 8px; width: min(96vw, 760px); }
+#fw-canvas { width: 100%; aspect-ratio: 720/440; background: transparent; border-radius: 10px; }
+#fw-body { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.fw-slot { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,.45); padding: 6px 12px; border-radius: 10px; }
+.fw-c { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; }
+.fw-s { width: 76px; padding: 6px 0; border: 0; border-radius: 8px; background: rgba(60,80,140,.8); color: #fff; font-size: 13px; cursor: pointer; }
+.fw-x { width: 130px; }
+.fw-t { font-size: 12px; color: #cde; }
+#fw-launch { background: #c0392b; font-size: 17px; }
+.fw-hint { font-size: 12px; color: rgba(255,255,255,.6); text-shadow: 0 1px 3px #000; text-align: center; }

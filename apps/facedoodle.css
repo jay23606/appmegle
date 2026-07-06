@@ -1,0 +1,8 @@
+/* Face Doodle */
+#fd { gap: 8px; width: min(96vw, 760px); }
+#fd-canvas { width: 100%; aspect-ratio: 3/2; background: transparent; touch-action: none; cursor: crosshair; border-radius: 10px; }
+#fd-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; background: rgba(0,0,0,.45); padding: 6px 10px; border-radius: 10px; }
+.fd-sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.fd-st { width: 30px; height: 30px; font-size: 18px; background: transparent; border: 2px solid transparent; border-radius: 8px; cursor: pointer; }
+.fd-on { border-color: #fff !important; }
+.fd-hint { font-size: 12px; color: rgba(255,255,255,.6); text-shadow: 0 1px 3px #000; text-align: center; }
