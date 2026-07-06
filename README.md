@@ -156,7 +156,10 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Watch Together (synced YouTube — host controls, both watch in lockstep)
 - [x] Pictionary (draw a secret word on a shared canvas; partner guesses; timed, roles swap)
 - [x] Spaceteam (frantic co-op; shout commands for your partner's control panel before the timer)
-- [ ] More apps — building toward 25; remaining: Hole in the Wall, Co-op Platformer, AR Sticker Slap
+- [x] Hole in the Wall (background-subtraction silhouette — contort to fit the sliding gap)
+- [x] AR Sticker Slap (motion — swipe your hand to slap emoji stickers over your camera; race to 10)
+- [x] Co-op Platformer (shared level; take turns on pressure plates to open the gate, reach the goal together)
+- [x] **All 25 of the app-idea batch shipped** ✅
 
 ### Ideas for more apps
 
