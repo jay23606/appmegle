@@ -165,7 +165,11 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Wavelength (psychic sees a secret dial position, says one clue; 7 co-op rounds)
 - [x] Alibi (60s to sync your story out loud, then separate typed interrogation)
 - [x] Séance (two-hand Ouija — planchette moves by averaged control + noise)
-- [ ] Second wave — 15 remaining: Read My Lips, I Spy Your Room, Hum That Tune, What's That Sound, Portrait Duel, Face Doodle, Exquisite Corpse, Fireworks Finale, Shadow Theater, High-Five Replay, Siren Flight, Theremin Duet, Bomb Squad, Two-Key Escape Room, Egg Buddy
+- [x] Read My Lips (mouth a phrase silently; partner lip-reads — the secret never crosses the wire)
+- [x] I Spy Your Room (spy something in the PARTNER's video; they hunt their own room)
+- [x] Hum That Tune (hum a famous song, no words; partner guesses out loud)
+- [x] What's That Sound? (foley — make a sound with a real object; partner guesses what made it)
+- [ ] Second wave — 11 remaining: Portrait Duel, Face Doodle, Exquisite Corpse, Fireworks Finale, Shadow Theater, High-Five Replay, Siren Flight, Theremin Duet, Bomb Squad, Two-Key Escape Room, Egg Buddy
 
 ### Ideas for more apps
 

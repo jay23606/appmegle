@@ -1,0 +1,8 @@
+/* What's That Sound? */
+#ws { gap: 14px; width: min(92vw, 440px); }
+#ws-body { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+.ws-prompt { font-size: clamp(22px, 6vw, 32px); font-weight: 800; color: #ffd24a; text-shadow: 0 2px 8px #000; text-align: center; }
+.ws-big { font-size: clamp(24px, 7vw, 40px); font-weight: 800; color: #fff; text-shadow: 0 2px 6px #000; }
+.ws-msg { font-size: 15px; color: #fff; text-shadow: 0 1px 4px #000; text-align: center; max-width: 400px; }
+.ws-btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+#ws-got { background: #2a9d4a; }

@@ -1,0 +1,11 @@
+/* Read My Lips */
+#rl2 { gap: 12px; width: min(92vw, 440px); }
+#rl2-body { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.rl2-ph { font-size: 15px; color: #ff9d3d; text-shadow: 0 1px 3px #000; }
+.rl2-word { font-size: clamp(24px, 6.5vw, 38px); font-weight: 800; color: #ffd24a; text-shadow: 0 2px 8px #000; text-align: center; }
+.rl2-big { font-size: clamp(22px, 6vw, 34px); font-weight: 800; color: #fff; text-shadow: 0 2px 6px #000; }
+.rl2-msg { font-size: 15px; color: #fff; text-shadow: 0 1px 4px #000; text-align: center; }
+.rl2-msg b { color: #ffd24a; }
+.rl2-in { display: flex; gap: 8px; }
+#rl2-g { padding: 10px 12px; font-size: 16px; border: 0; border-radius: 8px; background: rgba(20,20,30,.85); color: #fff; width: 210px; }
+.rl2-final { font-size: 20px; font-weight: 800; color: #ffd24a; text-shadow: 0 2px 6px #000; }
