@@ -49,6 +49,7 @@
         .app-bar { display: flex; align-items: center; gap: 10px; width: 100%; padding: 0 4px; text-shadow: 0 1px 3px #000; }
         .app-bar .stat { flex: 1; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .app-btn { padding: 6px 10px; font-size: 13px; border: 0; border-radius: 6px; color: #fff; background: rgba(0,0,0,.5); cursor: pointer; }
+        .app-loading { font-size: 15px; color: #fff; text-shadow: 0 1px 4px #000; background: rgba(0,0,0,.5); padding: 10px 18px; border-radius: 10px; pointer-events: auto; }
     </style>
 </head>
 <body>
@@ -124,52 +125,189 @@
         const send = (d) => { try { conn && conn.send(d); } catch (e) {} };
 
         // ======================================================================
-        //  Appmegle — tiny plugin host for in-call apps (chess, and later
-        //  whiteboard / tic-tac-toe / pong / …). An app file under apps/ calls
-        //  Appmegle.register({ id, label, css, mount, unmount, onData }).
+        //  Appmegle — tiny plugin host for in-call apps. An app file under apps/
+        //  calls Appmegle.register({ id, label, css, mount, unmount, onData }).
         //
+        //   - The dropdown is built from the manifest below; app code + CSS are
+        //     LAZY-LOADED the first time an app is opened (by either peer), so
+        //     page load stays light no matter how many apps exist.
         //   - Selecting an app from the "-- Apps --" dropdown opens it for BOTH
         //     peers; selecting "-- Apps --" closes it for both.
         //   - mount(ctx) gets { root, send, amCaller }. ctx.send(obj) delivers a
         //     JSON message to the other peer's matching app via onData(obj).
-        //   - Messages ride the existing PeerJS data channel; the host tags each
-        //     with the app id and routes incoming ones back to the right app.
+        //   - Messages that arrive while our copy is still downloading are
+        //     buffered and replayed right after mount (the peer's app often
+        //     sends its first sync the instant it mounts).
+        //   - Adding an app = drop apps/<name>.js (+ optional .css) and add one
+        //     line to this manifest. No script tags needed.
         // ======================================================================
         window.Appmegle = {
+            _manifest: [
+            { id: "qubic", label: "3D Tic-Tac-Toe", src: "apps/qubic.js" },
+            { id: "airhockey", label: "Air Hockey", src: "apps/airhockey.js" },
+            { id: "alibi", label: "Alibi", src: "apps/alibi.js" },
+            { id: "arslap", label: "AR Sticker Slap", src: "apps/arslap.js" },
+            { id: "asteroids", label: "Asteroids", src: "apps/asteroids.js" },
+            { id: "backgammon", label: "Backgammon", src: "apps/backgammon.js" },
+            { id: "ballroller", label: "Ball Roller (3D)", src: "apps/ballroller.js" },
+            { id: "battleship", label: "Battleship", src: "apps/battleship.js" },
+            { id: "bombsquad", label: "Bomb Squad", src: "apps/bombsquad.js" },
+            { id: "bomberman", label: "Bomberman", src: "apps/bomberman.js" },
+            { id: "boxing", label: "Boxing", src: "apps/boxing.js" },
+            { id: "bubble", label: "Bubble Bobble", src: "apps/bubblebobble.js" },
+            { id: "categories", label: "Categories", src: "apps/categories.js" },
+            { id: "checkers", label: "Checkers", src: "apps/checkers.js" },
+            { id: "chess", label: "Chess", src: "apps/chess.js" },
+            { id: "coopplat", label: "Co-op Platformer", src: "apps/coopplat.js" },
+            { id: "codenames", label: "Codenames Duet", src: "apps/codenames.js" },
+            { id: "quiz", label: "Compatibility Quiz", src: "apps/quiz.js" },
+            { id: "connect4", label: "Connect Four", src: "apps/connectfour.js" },
+            { id: "couples", label: "Couple's Quiz", src: "apps/couples.js" },
+            { id: "dirtbike", label: "Dirtbike Racer", src: "apps/dirtbike.js" },
+            { id: "dotsboxes", label: "Dots and Boxes", src: "apps/dotsboxes.js" },
+            { id: "duckhunt", label: "Duck Hunt", src: "apps/duckhunt.js" },
+            { id: "eggbuddy", label: "Egg Buddy", src: "apps/eggbuddy.js" },
+            { id: "corpse", label: "Exquisite Corpse", src: "apps/corpse.js" },
+            { id: "facedoodle", label: "Face Doodle", src: "apps/facedoodle.js" },
+            { id: "fireworks", label: "Fireworks Finale", src: "apps/fireworks.js" },
+            { id: "fruitninja", label: "Fruit Ninja (cam)", src: "apps/fruitninja.js" },
+            { id: "gomoku", label: "Gomoku", src: "apps/gomoku.js" },
+            { id: "hangman", label: "Hangman", src: "apps/hangman.js" },
+            { id: "headsup", label: "Heads Up!", src: "apps/headsup.js" },
+            { id: "helix", label: "Helix Descent (3D)", src: "apps/helix.js" },
+            { id: "highfive", label: "High-Five Replay", src: "apps/highfive.js" },
+            { id: "holdnote", label: "Hold the Note", src: "apps/holdnote.js" },
+            { id: "holewall", label: "Hole in the Wall", src: "apps/holewall.js" },
+            { id: "humtune", label: "Hum That Tune", src: "apps/humtune.js" },
+            { id: "ispy", label: "I Spy Your Room", src: "apps/ispy.js" },
+            { id: "icebreakers", label: "Icebreakers", src: "apps/icebreakers.js" },
+            { id: "kart", label: "Kart Racer", src: "apps/kart.js" },
+            { id: "liarsdice", label: "Liar's Dice", src: "apps/liarsdice.js" },
+            { id: "makelaugh", label: "Make Me Laugh", src: "apps/makelaugh.js" },
+            { id: "mancala", label: "Mancala", src: "apps/mancala.js" },
+            { id: "sumo", label: "Marble Sumo (3D)", src: "apps/sumo.js" },
+            { id: "mindmeld", label: "Mind Meld", src: "apps/mindmeld.js" },
+            { id: "minigolf", label: "Mini Golf (3D)", src: "apps/minigolf.js" },
+            { id: "mirror", label: "Mirror Match", src: "apps/mirror.js" },
+            { id: "monopoly", label: "Monopoly", src: "apps/monopoly.js" },
+            { id: "pacman", label: "Pac-Man", src: "apps/pacman.js" },
+            { id: "pictionary", label: "Pictionary", src: "apps/pictionary.js" },
+            { id: "racer", label: "Platform Racer", src: "apps/platformracer.js" },
+            { id: "pong", label: "Pong", src: "apps/pong.js" },
+            { id: "pool", label: "Pool", src: "apps/pool.js" },
+            { id: "portrait", label: "Portrait Duel", src: "apps/portrait.js" },
+            { id: "quoridor", label: "Quoridor", src: "apps/quoridor.js" },
+            { id: "reaction", label: "Reaction Duel", src: "apps/reaction.js" },
+            { id: "readlips", label: "Read My Lips", src: "apps/readlips.js" },
+            { id: "redlight", label: "Red Light Green Light", src: "apps/redlight.js" },
+            { id: "reversi", label: "Reversi", src: "apps/reversi.js" },
+            { id: "rps", label: "Rock-Paper-Scissors", src: "apps/rps.js" },
+            { id: "scavenger", label: "Scavenger Hunt", src: "apps/scavenger.js" },
+            { id: "scrabble", label: "Scrabble", src: "apps/scrabble.js" },
+            { id: "scream", label: "Scream Meter", src: "apps/scream.js" },
+            { id: "seance", label: "Séance", src: "apps/seance.js" },
+            { id: "shadow", label: "Shadow Theater", src: "apps/shadow.js" },
+            { id: "siren", label: "Siren Flight", src: "apps/siren.js" },
+            { id: "snake", label: "Snake", src: "apps/snake.js" },
+            { id: "spaceteam", label: "Spaceteam", src: "apps/spaceteam.js" },
+            { id: "shooter", label: "Spirit Shooter", src: "apps/shooter.js" },
+            { id: "splitsteal", label: "Split or Steal", src: "apps/splitsteal.js" },
+            { id: "stack", label: "Stack", src: "apps/stack.js" },
+            { id: "story", label: "Story Builder", src: "apps/story.js" },
+            { id: "taboo", label: "Taboo", src: "apps/taboo.js" },
+            { id: "tanks", label: "Tank Duel", src: "apps/tanks.js" },
+            { id: "tetris", label: "Tetris", src: "apps/tetris.js" },
+            { id: "theremin", label: "Theremin Duet", src: "apps/theremin.js" },
+            { id: "ttt", label: "Tic-Tac-Toe", src: "apps/tictactoe.js" },
+            { id: "trivia", label: "Trivia", src: "apps/trivia.js" },
+            { id: "tron", label: "Tron", src: "apps/tron.js" },
+            { id: "truthdare", label: "Truth or Dare", src: "apps/truthdare.js" },
+            { id: "tunnel", label: "Tunnel Flyer (3D)", src: "apps/tunnel.js" },
+            { id: "twotruths", label: "Two Truths & a Lie", src: "apps/twotruths.js" },
+            { id: "escape", label: "Two-Key Escape Room", src: "apps/escape.js" },
+            { id: "uno", label: "Uno", src: "apps/uno.js" },
+            { id: "puzzle", label: "Video Puzzle", src: "apps/puzzle.js" },
+            { id: "watch", label: "Watch Together", src: "apps/watch.js" },
+            { id: "wavelength", label: "Wavelength", src: "apps/wavelength.js" },
+            { id: "volley", label: "Webcam Volleyball", src: "apps/volley.js" },
+            { id: "whatsound", label: "What's That Sound?", src: "apps/whatsound.js" },
+            { id: "whiteboard", label: "Whiteboard", src: "apps/whiteboard.js" }
+            ],
             _apps: {},
-            _active: null,
-            register(app) {
+            _loading: {},
+            _active: null,      // the app that SHOULD be open (reserved at select time)
+            _mounted: null,     // the app whose mount() has actually run
+            _pending: null,     // peer messages buffered while _active is still loading
+            _buildMenu() {
+                for (const m of this._manifest) {
+                    const opt = document.createElement('option');
+                    opt.value = m.id; opt.textContent = m.label;
+                    appSelect.appendChild(opt);
+                }
+            },
+            register(app) {     // called by an app file when its script executes
                 this._apps[app.id] = app;
                 if (app.css && !document.querySelector('link[data-app="' + app.id + '"]')) {
                     const l = document.createElement('link');
                     l.rel = 'stylesheet'; l.href = app.css; l.dataset.app = app.id;
                     document.head.appendChild(l);
                 }
-                const opt = document.createElement('option');
-                opt.value = app.id; opt.textContent = app.label;
-                appSelect.appendChild(opt);
-                // keep the dropdown alphabetical by label, leaving the "-- Apps --" placeholder first
-                [...appSelect.options].slice(1)
-                    .sort((a, b) => a.textContent.localeCompare(b.textContent))
-                    .forEach(o => appSelect.appendChild(o));
+            },
+            _load(id) {
+                if (this._apps[id]) return Promise.resolve();
+                if (this._loading[id]) return this._loading[id];
+                const entry = this._manifest.find(m => m.id === id);
+                if (!entry) return Promise.reject(new Error('unknown app ' + id));
+                this._loading[id] = new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = entry.src;
+                    s.onload = () => this._apps[id] ? resolve() : reject(new Error(id + ' did not register'));
+                    s.onerror = () => { delete this._loading[id]; s.remove(); reject(new Error(id + ' failed to load')); };
+                    document.body.appendChild(s);
+                });
+                return this._loading[id];
+            },
+            _cssReady(app) {    // let the stylesheet land before first paint (bounded wait)
+                const l = app.css && document.querySelector('link[data-app="' + app.id + '"]');
+                if (!l || l.dataset.ready) return Promise.resolve();
+                return new Promise(res => {
+                    const done = () => { l.dataset.ready = 1; res(); };
+                    l.addEventListener('load', done, { once: true });
+                    l.addEventListener('error', done, { once: true });
+                    setTimeout(done, 1500);
+                });
             },
             open(id, broadcast) {
                 if (this._active === id) return;            // already open (e.g. echo of our own open)
                 if (this._active) this.close(false);        // only one app at a time, for now
-                const app = this._apps[id];
-                if (!app) return;
                 this._active = id;
                 appSelect.value = id;
+                if (broadcast) send({ app: 'host', t: 'open', id });   // tell the peer NOW so both sides download in parallel
+                this._pending = [];
                 appStage.classList.add('open');
-                app.mount({ root: appStage, send: (o) => send(Object.assign({ app: id }, o)), amCaller });
-                if (broadcast) send({ app: 'host', t: 'open', id });
+                appStage.innerHTML = '<div class="app-loading">loading…</div>';
+                this._load(id).then(() => this._cssReady(this._apps[id])).then(() => {
+                    if (this._active !== id) return;        // closed or switched while downloading
+                    const app = this._apps[id];
+                    appStage.innerHTML = '';
+                    app.mount({ root: appStage, send: (o) => send(Object.assign({ app: id }, o)), amCaller });
+                    this._mounted = id;
+                    const q = this._pending || []; this._pending = null;
+                    if (app.onData) q.forEach(m => { try { app.onData(m); } catch (e) {} });
+                }).catch(() => {
+                    if (this._active !== id) return;
+                    appStage.innerHTML = '<div class="app-loading">couldn\'t load that app 😕</div>';
+                    setTimeout(() => { if (this._active === id) this.close(true); }, 1600);
+                });
             },
             close(broadcast) {
-                const app = this._active && this._apps[this._active];
+                const app = this._mounted && this._apps[this._mounted];
                 if (app && app.unmount) try { app.unmount(); } catch (e) {}
                 appStage.classList.remove('open');
                 appStage.innerHTML = '';
                 this._active = null;
+                this._mounted = null;
+                this._pending = null;
                 appSelect.value = '';
                 if (broadcast) send({ app: 'host', t: 'close' });
             },
@@ -179,10 +317,14 @@
                     else if (msg.t === 'close') this.close(false);
                     return;
                 }
-                const app = this._apps[msg.app];
-                if (app && this._active === msg.app && app.onData) app.onData(msg);
+                if (this._active !== msg.app) return;
+                if (this._mounted === msg.app) {
+                    const app = this._apps[msg.app];
+                    if (app && app.onData) app.onData(msg);
+                } else if (this._pending) this._pending.push(msg);   // still downloading — replay after mount
             }
         };
+        Appmegle._buildMenu();
 
         appSelect.on('change', () => {
             const id = appSelect.value;
@@ -450,96 +592,6 @@
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
     </script>
 
-    <!-- in-call apps: each registers itself with Appmegle (loaded after the host above).
-         Dropdown order follows load order. To add an app, drop apps/<name>.js (+ css) and one line here. -->
-    <script src="apps/chess.js"></script>
-    <script src="apps/checkers.js"></script>
-    <script src="apps/connectfour.js"></script>
-    <script src="apps/reversi.js"></script>
-    <script src="apps/tictactoe.js"></script>
-    <script src="apps/dotsboxes.js"></script>
-    <script src="apps/battleship.js"></script>
-    <script src="apps/hangman.js"></script>
-    <script src="apps/rps.js"></script>
-    <script src="apps/icebreakers.js"></script>
-    <script src="apps/whiteboard.js"></script>
-    <script src="apps/pong.js"></script>
-    <script src="apps/airhockey.js"></script>
-    <script src="apps/tron.js"></script>
-    <script src="apps/snake.js"></script>
-    <script src="apps/asteroids.js"></script>
-    <script src="apps/platformracer.js"></script>
-    <script src="apps/pool.js"></script>
-    <script src="apps/uno.js"></script>
-    <script src="apps/monopoly.js"></script>
-    <script src="apps/duckhunt.js"></script>
-    <script src="apps/boxing.js"></script>
-    <script src="apps/scrabble.js"></script>
-    <script src="apps/kart.js"></script>
-    <script src="apps/tetris.js"></script>
-    <script src="apps/dirtbike.js"></script>
-    <script src="apps/ballroller.js"></script>
-    <script src="apps/qubic.js"></script>
-    <script src="apps/stack.js"></script>
-    <script src="apps/minigolf.js"></script>
-    <script src="apps/tunnel.js"></script>
-    <script src="apps/sumo.js"></script>
-    <script src="apps/helix.js"></script>
-    <script src="apps/pacman.js"></script>
-    <script src="apps/bubblebobble.js"></script>
-    <script src="apps/puzzle.js"></script>
-    <script src="apps/quiz.js"></script>
-    <script src="apps/trivia.js"></script>
-    <script src="apps/bomberman.js"></script>
-    <script src="apps/tanks.js"></script>
-    <script src="apps/fruitninja.js"></script>
-    <script src="apps/volley.js"></script>
-    <script src="apps/headsup.js"></script>
-    <script src="apps/shooter.js"></script>
-    <script src="apps/story.js"></script>
-    <script src="apps/twotruths.js"></script>
-    <script src="apps/truthdare.js"></script>
-    <script src="apps/couples.js"></script>
-    <script src="apps/taboo.js"></script>
-    <script src="apps/gomoku.js"></script>
-    <script src="apps/mancala.js"></script>
-    <script src="apps/categories.js"></script>
-    <script src="apps/codenames.js"></script>
-    <script src="apps/quoridor.js"></script>
-    <script src="apps/backgammon.js"></script>
-    <script src="apps/scream.js"></script>
-    <script src="apps/holdnote.js"></script>
-    <script src="apps/reaction.js"></script>
-    <script src="apps/redlight.js"></script>
-    <script src="apps/mirror.js"></script>
-    <script src="apps/liarsdice.js"></script>
-    <script src="apps/makelaugh.js"></script>
-    <script src="apps/scavenger.js"></script>
-    <script src="apps/watch.js"></script>
-    <script src="apps/pictionary.js"></script>
-    <script src="apps/spaceteam.js"></script>
-    <script src="apps/holewall.js"></script>
-    <script src="apps/arslap.js"></script>
-    <script src="apps/coopplat.js"></script>
-    <script src="apps/mindmeld.js"></script>
-    <script src="apps/splitsteal.js"></script>
-    <script src="apps/wavelength.js"></script>
-    <script src="apps/alibi.js"></script>
-    <script src="apps/seance.js"></script>
-    <script src="apps/readlips.js"></script>
-    <script src="apps/ispy.js"></script>
-    <script src="apps/humtune.js"></script>
-    <script src="apps/whatsound.js"></script>
-    <script src="apps/portrait.js"></script>
-    <script src="apps/facedoodle.js"></script>
-    <script src="apps/corpse.js"></script>
-    <script src="apps/fireworks.js"></script>
-    <script src="apps/siren.js"></script>
-    <script src="apps/theremin.js"></script>
-    <script src="apps/highfive.js"></script>
-    <script src="apps/shadow.js"></script>
-    <script src="apps/bombsquad.js"></script>
-    <script src="apps/escape.js"></script>
-    <script src="apps/eggbuddy.js"></script>
+    <!-- in-call app files are lazy-loaded by the Appmegle host from its manifest — no script tags here. -->
 </body>
 </html>
