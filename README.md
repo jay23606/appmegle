@@ -154,7 +154,9 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Make Me Laugh (30s to crack your partner; they tap if they laugh)
 - [x] Scavenger Hunt (race to show a real object matching the prompt)
 - [x] Watch Together (synced YouTube — host controls, both watch in lockstep)
-- [ ] More apps — building toward 25; remaining: Spaceteam, Pictionary, Hole in the Wall, Co-op Platformer, AR Sticker Slap
+- [x] Pictionary (draw a secret word on a shared canvas; partner guesses; timed, roles swap)
+- [x] Spaceteam (frantic co-op; shout commands for your partner's control panel before the timer)
+- [ ] More apps — building toward 25; remaining: Hole in the Wall, Co-op Platformer, AR Sticker Slap
 
 ### Ideas for more apps
 

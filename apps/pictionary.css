@@ -1,0 +1,8 @@
+/* Pictionary */
+#pc { gap: 8px; width: min(94vw, 520px); }
+#pc-canvas { width: 100%; aspect-ratio: 4/3; border-radius: 10px; background: rgba(20,25,45,.55); touch-action: none; cursor: crosshair; box-shadow: 0 6px 28px rgba(0,0,0,.55); }
+#pc-ctrl { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.pc-word { font-size: 20px; color: #fff; text-shadow: 0 1px 4px #000; } .pc-word b { color: #ffd24a; font-size: 26px; }
+.pc-msg { font-size: 16px; color: #fff; text-shadow: 0 1px 4px #000; text-align: center; }
+.pc-tools { display: flex; gap: 10px; }
+#pc-got { background: #2a9d4a; }

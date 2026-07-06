@@ -1,0 +1,11 @@
+/* Spaceteam */
+#st { gap: 12px; width: min(94vw, 460px); }
+#st-body { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.st-cmd { font-size: clamp(20px, 5vw, 30px); font-weight: 800; color: #ffd24a; text-align: center; text-shadow: 0 2px 6px #000; }
+.st-bar { width: 100%; height: 10px; background: rgba(255,255,255,.15); border-radius: 5px; overflow: hidden; }
+.st-fill { height: 100%; background: #e0a92a; transition: width .12s linear; }
+.st-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.st-btn { padding: 18px 8px; font-size: 14px; font-weight: 700; border: 0; border-radius: 10px; background: rgba(60,80,140,.7); color: #fff; cursor: pointer; }
+.st-btn:active { background: rgba(120,160,255,.8); }
+.st-big { font-size: clamp(30px, 8vw, 52px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000; }
+.st-msg { font-size: 16px; color: #fff; text-shadow: 0 1px 4px #000; }
