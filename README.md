@@ -160,6 +160,12 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] AR Sticker Slap (motion — swipe your hand to slap emoji stickers over your camera; race to 10)
 - [x] Co-op Platformer (shared level; take turns on pressure plates to open the gate, reach the goal together)
 - [x] **All 25 of the app-idea batch shipped** ✅
+- [x] Mind Meld (telepathy — converge on the same word round by round)
+- [x] Split or Steal (negotiate face to face, then secretly choose — Golden Balls)
+- [x] Wavelength (psychic sees a secret dial position, says one clue; 7 co-op rounds)
+- [x] Alibi (60s to sync your story out loud, then separate typed interrogation)
+- [x] Séance (two-hand Ouija — planchette moves by averaged control + noise)
+- [ ] Second wave — 15 remaining: Read My Lips, I Spy Your Room, Hum That Tune, What's That Sound, Portrait Duel, Face Doodle, Exquisite Corpse, Fireworks Finale, Shadow Theater, High-Five Replay, Siren Flight, Theremin Duet, Bomb Squad, Two-Key Escape Room, Egg Buddy
 
 ### Ideas for more apps
 

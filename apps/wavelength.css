@@ -1,0 +1,7 @@
+/* Wavelength */
+#wl { gap: 10px; width: min(94vw, 470px); }
+#wl-canvas { width: 100%; aspect-ratio: 440/260; border-radius: 10px; background: rgba(0,0,0,.3); touch-action: none; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,.55); }
+#wl-ctrl { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.wl-msg { font-size: 15px; color: #fff; text-shadow: 0 1px 4px #000; text-align: center; max-width: 420px; }
+.wl-msg b { color: #ffd24a; }
+.wl-final { font-size: 22px; font-weight: 800; color: #ffd24a; text-shadow: 0 2px 6px #000; }

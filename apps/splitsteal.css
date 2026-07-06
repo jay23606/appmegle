@@ -1,0 +1,12 @@
+/* Split or Steal */
+#ss { gap: 14px; }
+#ss-body { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.ss-pot { font-size: clamp(34px, 9vw, 56px); font-weight: 800; color: #ffd24a; text-shadow: 0 2px 8px #000; }
+.ss-big { font-size: clamp(24px, 6vw, 38px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000; text-align: center; }
+.ss-timer { font-size: clamp(40px, 11vw, 68px); font-weight: 800; color: #fff; text-shadow: 0 2px 6px #000; }
+.ss-msg { font-size: 15px; color: #fff; text-shadow: 0 1px 4px #000; text-align: center; }
+.ss-btns { display: flex; gap: 18px; }
+.ss-choice { padding: 22px 30px; font-size: 22px; font-weight: 800; border: 0; border-radius: 14px; color: #fff; cursor: pointer; }
+.ss-split { background: #2a9d4a; } .ss-steal { background: #c0392b; }
+.ss-rev { display: flex; gap: 26px; font-size: 19px; color: #fff; text-shadow: 0 1px 4px #000; }
+.ss-green { color: #7be08a; } .ss-red { color: #ff7b6b; }

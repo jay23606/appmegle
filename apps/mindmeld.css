@@ -1,0 +1,11 @@
+/* Mind Meld */
+#mm { gap: 12px; width: min(92vw, 420px); }
+#mm-body { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.mm-row { display: flex; gap: 12px; align-items: baseline; font-size: 20px; color: #fff; text-shadow: 0 1px 4px #000; }
+.mm-row em { color: rgba(255,255,255,.4); font-style: normal; }
+.mm-hit span { color: #ffd24a; font-weight: 800; font-size: 26px; }
+.mm-win { font-size: 22px; font-weight: 800; color: #fff; text-shadow: 0 2px 6px #000; }
+.mm-msg { font-size: 15px; color: #fff; text-shadow: 0 1px 3px #000; text-align: center; }
+.mm-in { display: flex; gap: 8px; }
+#mm-w { padding: 10px 12px; font-size: 17px; border: 0; border-radius: 8px; background: rgba(20,20,30,.85); color: #fff; width: 180px; }
+.mm-hint { font-size: 12px; color: rgba(255,255,255,.55); text-shadow: 0 1px 3px #000; text-align: center; }

@@ -1,0 +1,14 @@
+/* Alibi */
+#al { gap: 12px; width: min(94vw, 520px); }
+#al-body { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.al-case { font-size: 16px; color: #ffd24a; text-shadow: 0 1px 4px #000; text-align: center; max-width: 480px; }
+.al-timer { font-size: clamp(36px, 10vw, 60px); font-weight: 800; color: #fff; text-shadow: 0 2px 6px #000; }
+.al-msg { font-size: 15px; color: #fff; text-shadow: 0 1px 4px #000; text-align: center; }
+.al-warn { color: #ff9d3d; font-weight: 700; }
+.al-q { display: flex; flex-direction: column; gap: 3px; width: 100%; font-size: 13px; color: #cde; text-shadow: 0 1px 3px #000; }
+.al-in { padding: 8px 10px; font-size: 15px; border: 0; border-radius: 6px; background: rgba(20,20,30,.85); color: #fff; }
+.al-tab { width: 100%; border-collapse: collapse; font-size: 12px; color: #fff; background: rgba(0,0,0,.45); border-radius: 8px; }
+.al-tab th, .al-tab td { padding: 5px 7px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.12); }
+.al-hit td { color: #7be08a; } .al-miss td { color: #ff9b8d; }
+.al-tab td:first-child { color: #cde; }
+.al-verdict { font-size: 18px; font-weight: 800; color: #fff; text-shadow: 0 2px 6px #000; text-align: center; }

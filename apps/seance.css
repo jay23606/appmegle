@@ -1,0 +1,5 @@
+/* Séance */
+#se { gap: 10px; width: min(94vw, 500px); }
+#se-canvas { width: 100%; aspect-ratio: 460/340; border-radius: 12px; background: rgba(15,8,25,.4); touch-action: none; cursor: pointer; box-shadow: 0 6px 30px rgba(80,40,140,.45); }
+.se-msg-out { font-family: Georgia, serif; font-size: 17px; letter-spacing: 2px; color: #d9c9a8; text-shadow: 0 0 8px rgba(217,201,168,.6); min-height: 22px; }
+.se-hint { font-size: 12px; color: rgba(255,255,255,.55); text-shadow: 0 1px 3px #000; text-align: center; }
