@@ -1,0 +1,23 @@
+/* Two-Key Escape Room */
+#er { gap: 10px; width: min(94vw, 520px); }
+#er-body { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.er-t { font-size: 17px; font-weight: 800; color: #ffd24a; text-shadow: 0 1px 4px #000; }
+.er-big { font-size: clamp(26px, 7vw, 42px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000; text-align: center; }
+.er-msg { font-size: 14px; color: #fff; text-shadow: 0 1px 4px #000; text-align: center; max-width: 460px; }
+.er-msg b { color: #ff9d3d; }
+.er-syms { font-size: 40px; letter-spacing: 14px; color: #fff; text-shadow: 0 0 12px rgba(255,210,74,.7); }
+.er-code { font-size: 26px; font-weight: 800; color: #7be08a; letter-spacing: 6px; }
+.er-pad { display: grid; grid-template-columns: repeat(6, 44px); gap: 6px; }
+.er-key { height: 44px; font-size: 18px; background: rgba(30,35,55,.9); color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; cursor: pointer; }
+.er-leg { border-collapse: collapse; background: rgba(0,0,0,.5); border-radius: 8px; font-size: 17px; color: #fff; }
+.er-leg td { padding: 4px 16px; border-bottom: 1px solid rgba(255,255,255,.12); text-align: center; }
+.er-seq, .er-in { display: flex; gap: 10px; min-height: 26px; }
+.er-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); }
+.er-btns { display: flex; gap: 12px; }
+.er-cb { width: 46px; height: 46px; border-radius: 50%; border: 3px solid rgba(255,255,255,.6); cursor: pointer; }
+.er-grid { display: flex; flex-direction: column; gap: 4px; }
+.er-gr { display: flex; gap: 4px; } .er-gr span { width: 40px; height: 24px; text-align: center; color: #cde; font-size: 12px; line-height: 24px; }
+.er-gr span:first-child, .er-gr:first-child span { width: 22px; }
+.er-cell { width: 40px; height: 40px; font-size: 17px; font-weight: 700; background: rgba(30,35,55,.9); color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 6px; cursor: pointer; }
+.er-coords { font-size: 21px; font-weight: 800; color: #7be08a; letter-spacing: 2px; }
+.er-hint { font-size: 12px; color: rgba(255,255,255,.6); text-shadow: 0 1px 3px #000; text-align: center; }

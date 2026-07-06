@@ -177,7 +177,10 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Theremin Duet (hand height plays pentatonic melody; partner's hand plays bass)
 - [x] High-Five Replay (synced countdown, slow-mo side-by-side replay, ms sync score)
 - [x] Shadow Theater (both silhouettes on one shared stage; act out prompts)
-- [ ] Second wave — 3 remaining: Bomb Squad, Two-Key Escape Room, Egg Buddy
+- [x] Bomb Squad (one sees the bomb, one sees the manual; 3 modules, 3 strikes, 3 minutes)
+- [x] Two-Key Escape Room (each sees half of every puzzle; 3 chambers before the clock dies)
+- [x] Egg Buddy (a tamagotchi that lives only during this call — ephemerality as a feature)
+- [x] **Second wave complete — all 20 shipped** ✅
 
 ### Ideas for more apps
 
