@@ -173,7 +173,11 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Face Doodle (draw/stamp on your partner's live face; syncs both ways)
 - [x] Exquisite Corpse (fold-over monster: head → torso → legs → feet, big reveal)
 - [x] Fireworks Finale (co-design shells, launch one synchronized show with sound)
-- [ ] Second wave — 7 remaining: Shadow Theater, High-Five Replay, Siren Flight, Theremin Duet, Bomb Squad, Two-Key Escape Room, Egg Buddy
+- [x] Siren Flight (voice-pitch flying — autocorrelation pitch detection; sing to climb)
+- [x] Theremin Duet (hand height plays pentatonic melody; partner's hand plays bass)
+- [x] High-Five Replay (synced countdown, slow-mo side-by-side replay, ms sync score)
+- [x] Shadow Theater (both silhouettes on one shared stage; act out prompts)
+- [ ] Second wave — 3 remaining: Bomb Squad, Two-Key Escape Room, Egg Buddy
 
 ### Ideas for more apps
 
