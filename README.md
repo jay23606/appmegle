@@ -181,6 +181,7 @@ Firebase `transaction()` so two people searching at once can't grab the same str
 - [x] Two-Key Escape Room (each sees half of every puzzle; 3 chambers before the clock dies)
 - [x] Egg Buddy (a tamagotchi that lives only during this call — ephemerality as a feature)
 - [x] **Second wave complete — all 20 shipped** ✅
+- [x] Geometry Dash (rhythm auto-runner race; seed-synced procedural level, die-and-retry, first to the flag wins)
 
 ### Ideas for more apps
 
