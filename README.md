@@ -86,7 +86,7 @@ from `-- Apps --` in either tab — the match initiator is White.
 
 Everything runs on **Supabase** — no PeerJS cloud, no Firebase (same backend as
 [slumegle](https://github.com/jay23606/slumegle) and
-[instamegle](https://github.com/jay23606/instamegle)). The WebRTC offer/answer/ICE
+[Peek](https://github.com/jay23606/peek)). The WebRTC offer/answer/ICE
 handshake rides **Supabase Realtime Broadcast**, the live online count uses **Realtime
 Presence**, and matchmaking is a Postgres lobby (`appmegle_lobby`) with the atomic
 `claim_appmegle_partner()` RPC in [`schema.sql`](schema.sql) — `FOR UPDATE SKIP LOCKED`
