@@ -1,8 +1,8 @@
-// Minimal SW: enables PWA install. Network-first so the live app, CDN scripts,
-// and Firebase signaling are never served stale; falls back to cache offline.
+// Minimal SW: enables PWA install. Network-first so the live app, the Supabase
+// client, and Realtime signaling are never served stale; falls back to cache offline.
 // App files under apps/ are LAZY-LOADED by the page and runtime-cached by the
 // fetch handler below on first use — they are deliberately not pre-cached here.
-const CACHE = 'appmegle-v42';
+const CACHE = 'appmegle-v43';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './icon-192.png', './icon-512.png'

@@ -80,40 +80,164 @@
         </span>
     </div>
 
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-database.js"></script>
-    <script>
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        // ---- Supabase (shared event-mgmt project; anon publishable key + RLS) ----
+        const SUPABASE_URL = 'https://zbtgonklxweikgukzukg.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_Tpkd3FzWhsfldMll-gIqfg_74YVroef';
+        const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
         // ---- helpers (same spirit as the inspo repos) ----
         const $ = (id, props) => { const e = document.getElementById(id); if (props) Object.assign(e, props); return e; };
         const rand = () => Math.random().toString(36).slice(2);
         Element.prototype.on = function (e, fn) { this.addEventListener(e, fn); return this; };
 
-        // ---- config / state ----
-        const firebaseConfig = { databaseURL: "https://jay23606-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(firebaseConfig);
-        const lobby = firebase.database().ref('appmegle/lobby');     // waiting strangers
-        const presence = firebase.database().ref('appmegle/online'); // everyone currently here
-        const myKey = rand();                                        // our slot in the lobby
+        // Our anonymous identity for this session — both our lobby slot and our
+        // signal-channel address. Replaces PeerJS's random peer.id.
+        const clientId = (crypto.randomUUID ? crypto.randomUUID() : rand() + rand());
 
-        let peer, localStream, call, conn, partner, searching = false, started = false, screenStream = null, myCountry = '';
-        let searchTimer = null, typingTimer = null, typingShown = false;
+        // ===================== WebRTC over Supabase Realtime (no PeerJS) =====================
+        // The offer/answer/ICE handshake rides Supabase Realtime Broadcast, keyed by clientId.
+        // Media/data still flow directly browser-to-browser once connected. STUN only (no TURN).
+        const ICE = { iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' },
+        ] };
+        let signalCh = null;
+        let onDataConn = null, onMediaConn = null;   // incoming handlers (were peer.on('connection'/'call'))
+        const conns = new Map();                     // cid -> { handleSignal }
+        const signalSend = (to, m) => { try { signalCh && signalCh.send({ type: 'broadcast', event: 'sig', payload: { to, from: clientId, ...m } }); } catch (e) {} };
+        const emitter = () => { const L = {}; return {
+            on(ev, fn) { (L[ev] || (L[ev] = [])).push(fn); return this; },
+            emit(ev, ...a) { (L[ev] || []).forEach(f => f(...a)); },
+        }; };
+
+        // Reliable, ordered data connection — same surface the app (and every apps/*.js) used from PeerJS.
+        const makeDataConn = (remote, cid, initiator, metadata) => {
+            const ev = emitter(); const pc = new RTCPeerConnection(ICE);
+            let dc, remoteSet = false, closed = false; const pend = [];
+            const fireClose = () => { if (closed) return; closed = true; api.open = false; conns.delete(cid); ev.emit('close'); };
+            const api = {
+                peer: remote, metadata, open: false, peerConnection: pc,
+                on(e, fn) { ev.on(e, fn); return api; },
+                send(o) { try { if (dc && dc.readyState === 'open') dc.send(JSON.stringify(o)); } catch (e) {} },
+                close() { try { dc && dc.close(); } catch (e) {} try { pc.close(); } catch (e) {} conns.delete(cid); },
+            };
+            const wireDC = (ch) => {
+                dc = ch;
+                dc.onopen = () => { api.open = true; ev.emit('open'); };
+                dc.onmessage = (m) => { let d; try { d = JSON.parse(m.data); } catch (e) { d = m.data; } ev.emit('data', d); };
+                dc.onclose = fireClose;
+            };
+            pc.onicecandidate = (e) => { if (e.candidate) signalSend(remote, { cid, kind: 'data', ice: e.candidate }); };
+            pc.onconnectionstatechange = () => { if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) fireClose(); };
+            if (initiator) {
+                wireDC(pc.createDataChannel('d'));
+                pc.createOffer().then(o => pc.setLocalDescription(o))
+                  .then(() => signalSend(remote, { cid, kind: 'data', sdp: pc.localDescription, metadata }));
+            } else { pc.ondatachannel = (e) => wireDC(e.channel); }
+            conns.set(cid, { handleSignal: async (m) => {
+                if (m.sdp) {
+                    await pc.setRemoteDescription(m.sdp); remoteSet = true;
+                    pend.splice(0).forEach(c => pc.addIceCandidate(c).catch(() => {}));
+                    if (m.sdp.type === 'offer') { await pc.setLocalDescription(await pc.createAnswer()); signalSend(remote, { cid, kind: 'data', sdp: pc.localDescription }); }
+                } else if (m.ice) { remoteSet ? pc.addIceCandidate(m.ice).catch(() => {}) : pend.push(m.ice); }
+            } });
+            return api;
+        };
+
+        // Media (video call) connection. The app answers via api.answer(stream); we only
+        // set the remote description in handleSignal so answer() always has an offer to reply to.
+        const makeMediaConn = (remote, cid, initiator, metadata, stream) => {
+            const ev = emitter(); const pc = new RTCPeerConnection(ICE);
+            let remoteSet = false, closed = false; const pend = [];
+            const fireClose = (isErr) => { if (closed) return; closed = true; conns.delete(cid); ev.emit(isErr ? 'error' : 'close'); };
+            const addTracks = (s) => s.getTracks().forEach(t => pc.addTrack(t, s));
+            const api = {
+                peer: remote, metadata, peerConnection: pc,
+                on(e, fn) { ev.on(e, fn); return api; },
+                answer: async (s) => { addTracks(s); await pc.setLocalDescription(await pc.createAnswer()); signalSend(remote, { cid, kind: 'media', sdp: pc.localDescription }); },
+                close() { try { pc.close(); } catch (e) {} conns.delete(cid); },
+            };
+            pc.onicecandidate = (e) => { if (e.candidate) signalSend(remote, { cid, kind: 'media', ice: e.candidate }); };
+            pc.ontrack = (e) => ev.emit('stream', e.streams[0]);
+            pc.onconnectionstatechange = () => {
+                if (pc.connectionState === 'failed') fireClose(true);
+                else if (['disconnected', 'closed'].includes(pc.connectionState)) fireClose(false);
+            };
+            if (initiator) {
+                addTracks(stream);
+                pc.createOffer().then(o => pc.setLocalDescription(o))
+                  .then(() => signalSend(remote, { cid, kind: 'media', sdp: pc.localDescription, metadata }));
+            }
+            conns.set(cid, { handleSignal: async (m) => {
+                if (m.sdp) { await pc.setRemoteDescription(m.sdp); remoteSet = true; pend.splice(0).forEach(c => pc.addIceCandidate(c).catch(() => {})); }
+                else if (m.ice) { remoteSet ? pc.addIceCandidate(m.ice).catch(() => {}) : pend.push(m.ice); }
+            } });
+            return api;
+        };
+
+        // PeerJS-shaped facade so the rest of the app is unchanged (target by clientId).
+        const peer = {
+            id: clientId,
+            connect: (id, opts = {}) => makeDataConn(id, rand(), true, opts.metadata),
+            call: (id, stream, opts = {}) => makeMediaConn(id, rand(), true, opts.metadata, stream),
+            on(ev, fn) { if (ev === 'connection') onDataConn = fn; else if (ev === 'call') onMediaConn = fn; return peer; },
+        };
+
+        // Dispatch an incoming signaling message to its connection (or create one on offer).
+        // For a fresh offer we set the remote description BEFORE handing the conn to the app,
+        // so an auto-answering handler (appmegle answers immediately) has an offer to reply to.
+        const onSignal = async (p) => {
+            if (!p || p.to !== clientId) return;
+            let entry = conns.get(p.cid), fresh = null;
+            if (!entry) {
+                if (!p.sdp || p.sdp.type !== 'offer') return;   // stray candidate/answer for a dead conn
+                if (p.kind === 'data') fresh = { c: makeDataConn(p.from, p.cid, false, p.metadata), cb: onDataConn };
+                else if (p.kind === 'media') fresh = { c: makeMediaConn(p.from, p.cid, false, p.metadata), cb: onMediaConn };
+                entry = conns.get(p.cid);
+            }
+            if (entry) await entry.handleSignal(p);
+            if (fresh && fresh.cb) fresh.cb(fresh.c);
+        };
+
+        const startRtc = () => new Promise((resolve) => {
+            signalCh = sb.channel('appmegle-signal', { config: { broadcast: { self: false } } });
+            signalCh.on('broadcast', { event: 'sig' }, ({ payload }) => onSignal(payload));
+            signalCh.subscribe((status) => { if (status === 'SUBSCRIBED') resolve(); });
+        });
+
+        // ---- Realtime presence: the live "N online" count ----
+        // Subscribed at boot so the count is visible before you Start; we only track()
+        // ourselves into it once you Start (so the count reflects people actually in the pool).
+        let presenceCh = null;
+        const startPresence = () => {
+            presenceCh = sb.channel('appmegle-presence', { config: { presence: { key: clientId } } });
+            presenceCh.on('presence', { event: 'sync' }, () => {
+                online.textContent = Object.keys(presenceCh.presenceState()).length + ' online';
+            });
+            presenceCh.subscribe();
+        };
+        const enterPresence = () => { presenceCh && presenceCh.track({ t: Date.now() }); };
+        const leavePresence = () => { presenceCh && presenceCh.untrack(); };
+
+        // ---- config / state ----
+        let localStream, call, conn, partner, searching = false, started = false, screenStream = null, myCountry = '';
+        let searchTimer = null, typingTimer = null, typingShown = false, pairTimer = null, searchStart = 0;
         let amCaller = false;                       // caller is "player 1" (e.g. White in chess), answerer is "player 2"
         const MATCH_TIMEOUT = 30000;   // ms before "still looking" nudge
+        const POLL = 3000;             // ms between lobby re-checks while waiting
+        const PAIR_TIMEOUT = 12000;    // ms to give a claimed stranger to connect before re-searching
 
         const go = $('go'), stop = $('stop'), msg = $('msg'),
               stat = $('stat'), log = $('log'), localVideo = $('local-video'), remoteVideo = $('remote-video'),
               online = $('online'), chat = $('chat'), toggleChat = $('toggle-chat'), typing = $('typing'), share = $('share'), country = $('country'),
               appSelect = $('app-select'), appStage = $('app-stage');
 
-        const leaveLobby = () => lobby.child(myKey).remove();
-        const leave = () => { leaveLobby(); presence.child(myKey).remove(); };
-
-        // live count of everyone currently present (updates for all clients in realtime)
-        presence.on('value', (snap) => {
-            const n = snap.numChildren();
-            online.textContent = `${n} online`;
-        });
+        // ---- lobby (Supabase table + atomic claim RPC; replaces Firebase transaction) ----
+        const leaveLobby = () => { sb.from('appmegle_lobby').delete().eq('client_id', clientId); };
+        const leave = () => { leaveLobby(); leavePresence(); };
 
         const say = (t) => stat.textContent = t;
         const line = (text, cls) => {
@@ -359,7 +483,7 @@
         // ---- media ----
         const getMedia = () => navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-        // ---- PeerJS wiring (works whether we called or were called) ----
+        // ---- connection wiring (works whether we called or were called) ----
         const watchIce = (c) => {
             const pc = c.peerConnection;
             if (!pc) return;
@@ -373,7 +497,7 @@
         };
         const wireCall = (c) => {
             call = c;
-            c.on('stream', (s) => { remoteVideo.srcObject = s; remoteVideo.dataset.live = '1'; });
+            c.on('stream', (s) => { remoteVideo.srcObject = s; remoteVideo.dataset.live = '1'; clearTimeout(pairTimer); });
             c.on('close', partnerGone);
             c.on('error', partnerGone);
             watchIce(c);
@@ -404,10 +528,17 @@
             wireConn(peer.connect(id, { reliable: true, serialization: 'json' }));
             wireCall(peer.call(id, localStream));
             paired();
+            // dead-claim guard: the claimed stranger may already be gone (no Firebase
+            // onDisconnect). If nothing connects, drop them and look again.
+            clearTimeout(pairTimer);
+            pairTimer = setTimeout(() => {
+                if (partner === id && !remoteVideo.dataset.live) { cleanupPartner(); search(); }
+            }, PAIR_TIMEOUT);
         };
 
         const paired = () => {
-            searching = false;
+            searching = false; searchStart = 0;
+            leaveLobby();                          // clear any lingering self-slot
             clearTimeout(searchTimer);
             clearLog();
             remoteVideo.className = 'big'; localVideo.className = 'pip';   // reset swap
@@ -429,6 +560,7 @@
 
         const cleanupPartner = () => {
             partner = null;
+            clearTimeout(pairTimer);
             country.textContent = '';
             showTyping(false); clearTimeout(typingTimer);
             if (screenStream) stopShare();
@@ -442,33 +574,19 @@
         };
 
         // ---- matchmaking: atomically grab a waiting stranger, else advertise self ----
-        const search = () => {
+        // The claim + insert happen server-side in one RPC (FOR UPDATE SKIP LOCKED), so two
+        // people searching at once can't grab the same stranger. While waiting we re-poll,
+        // which also refreshes our slot's timestamp and breaks a rare two-empty-lobby tie.
+        const search = async () => {
             searching = true;
-            say('Looking for a stranger…');
+            if (!searchStart) searchStart = Date.now();
+            say(Date.now() - searchStart > MATCH_TIMEOUT ? 'Still looking… not many people around right now.' : 'Looking for a stranger…');
             clearTimeout(searchTimer);
-            let claimedId = null;
-            lobby.transaction((current) => {
-                claimedId = null;                       // reset each run (txn may retry)
-                current = current || {};
-                for (const k in current) {
-                    if (current[k] !== peer.id) {       // a waiting stranger that isn't us
-                        claimedId = current[k];
-                        delete current[k];              // claim them, atomically
-                        return current;
-                    }
-                }
-                current[myKey] = peer.id;               // nobody waiting → advertise self
-                return current;
-            }).then(() => {
-                if (claimedId) {
-                    connectTo(claimedId);
-                } else {
-                    lobby.child(myKey).onDisconnect().remove();
-                    searchTimer = setTimeout(() => {
-                        if (searching) say('Still looking… not many people around right now.');
-                    }, MATCH_TIMEOUT);
-                }
-            });
+            const { data, error } = await sb.rpc('claim_appmegle_partner', { my_id: clientId });
+            if (!searching) return;                 // stopped or paired while awaiting
+            if (error) { searchTimer = setTimeout(() => { if (searching) search(); }, POLL); return; }
+            if (data) return connectTo(data);       // claimed a waiting stranger → we call them
+            searchTimer = setTimeout(() => { if (searching) search(); }, POLL);   // waiting to be called
         };
 
         // someone claimed us → they will call us; just answer (we are player 2)
@@ -490,14 +608,10 @@
             try { localStream = await getMedia(); } catch (e) { say('Camera/mic blocked'); go.disabled = false; return; }
             localVideo.srcObject = localStream;
             started = true;
-            peer = new Peer();
-            peer.on('open', () => {
-                presence.child(myKey).set(true);
-                presence.child(myKey).onDisconnect().remove();
-                listen(); search();
-                go.textContent = 'Next'; go.disabled = false; stop.disabled = false;
-            });
-            peer.on('error', (e) => say('Peer error: ' + e.type));
+            await startRtc();
+            enterPresence();
+            listen(); search();
+            go.textContent = 'Next'; go.disabled = false; stop.disabled = false;
         };
 
         const skip = () => {
@@ -512,8 +626,8 @@
         stop.on('click', () => {
             leave();
             cleanupPartner();
-            searching = false; started = false;
-            clearTimeout(searchTimer);
+            searching = false; started = false; searchStart = 0;
+            clearTimeout(searchTimer); clearTimeout(pairTimer);
             say('Stopped');
             line('You disconnected.', 'sys');
             go.textContent = 'Start'; go.disabled = false; stop.disabled = true;
@@ -587,8 +701,11 @@
             if (open) { toggleChat.classList.remove('unread'); if (!msg.disabled) msg.focus(); }
         });
 
-        // clean up our lobby slot if the tab closes
+        // clean up our lobby slot + presence if the tab closes
         window.addEventListener('beforeunload', leave);
+
+        // watch the live count from the start (you're only counted once you Start)
+        startPresence();
 
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
     </script>

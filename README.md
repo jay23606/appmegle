@@ -52,7 +52,7 @@ window.Appmegle.register({
 - **`ctx.amCaller`** — `true` for the peer who initiated the match (use it to assign
   sides, e.g. White/Black or X/O).
 
-Messages ride the **existing PeerJS data channel** (JSON-serialized), the same one
+Messages ride the **existing WebRTC data channel** (JSON-serialized), the same one
 used for chat — no extra connections or servers. App messages are objects; the
 host's own open/close control messages use `app: 'host'`.
 
@@ -65,6 +65,7 @@ line at the bottom of `index.html`. No host changes needed.
 | File | Purpose |
 |------|---------|
 | `index.html` | Video chat + the generic `Appmegle` app host and `-- Apps --` dropdown. |
+| `schema.sql` | Supabase lobby table + atomic matchmaking RPC + RLS. Apply once to your project. |
 | `apps/chess.js` | Chess app: board, rules (loads chess.js), move sync. Self-contained. |
 | `apps/chess.css` | Chess styles, including the outline-piece rendering. |
 | `manifest.json` | PWA metadata. |
@@ -83,9 +84,14 @@ To test locally, open it in **two tabs** or two browsers. One waits, the other
 matches it; each tab needs its own camera/mic permission. Once paired, pick **Chess**
 from `-- Apps --` in either tab — the match initiator is White.
 
-Coordination uses Firebase Realtime DB namespaced under `appmegle/`
-(`appmegle/lobby` + `appmegle/online`), and the matchmaker claims lobby slots inside a
-Firebase `transaction()` so two people searching at once can't grab the same stranger.
+Everything runs on **Supabase** — no PeerJS cloud, no Firebase (same backend as
+[slumegle](https://github.com/jay23606/slumegle) and
+[instamegle](https://github.com/jay23606/instamegle)). The WebRTC offer/answer/ICE
+handshake rides **Supabase Realtime Broadcast**, the live online count uses **Realtime
+Presence**, and matchmaking is a Postgres lobby (`appmegle_lobby`) with the atomic
+`claim_appmegle_partner()` RPC in [`schema.sql`](schema.sql) — `FOR UPDATE SKIP LOCKED`
+ensures two people searching at once can't grab the same stranger (the role Firebase's
+`transaction()` used to play). Apply `schema.sql` to your Supabase project once.
 
 ## Roadmap
 
@@ -200,5 +206,8 @@ Each is the same `Appmegle.register({...})` contract — turn-based ones mirror
 - **Trust-based, like any P2P game.** Each side validates its own input; a modified
   client could send an illegal move/state. Fine for casual play; a competitive
   version would validate incoming messages against local state before applying.
-- Inherits slumegle's notes: one-to-one only, no persistent identity, STUN-only (no
-  TURN), and free IP-geolocation tiers are rate-limited.
+- Inherits slumegle's notes: one-to-one only, no persistent identity (a fresh random
+  `clientId` per load), STUN-only (no TURN), and free IP-geolocation tiers are rate-limited.
+- **Public anon key + RLS.** Supabase access uses the publishable (anon) key; the lobby's
+  access control is the RLS policy in `schema.sql`. The lobby stores only throwaway session
+  ids — no PII.
