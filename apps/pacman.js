@@ -147,12 +147,12 @@
                 const dx = x - (mine.x * CELL + CELL / 2), dy = y - (mine.y * CELL + CELL / 2);
                 setDir(Math.abs(dx) > Math.abs(dy) ? (dx >= 0 ? 1 : 3) : (dy >= 0 ? 2 : 0));
             };
-            canvas.addEventListener('pointerdown', onTap);
+            canvas.addEventListener('click', onTap);
             window.addEventListener('keydown', onKey);
             if (auth) newGame(); else draw();
             lastT = performance.now(); raf = requestAnimationFrame(loop);
         },
-        unmount() { cancelAnimationFrame(raf); window.removeEventListener('keydown', onKey); canvas?.removeEventListener('pointerdown', onTap); ctx = canvas = g = statEl = null; pacs = { a: null, b: null }; ghosts = []; rp = null; },
+        unmount() { cancelAnimationFrame(raf); window.removeEventListener('keydown', onKey); canvas?.removeEventListener('click', onTap); ctx = canvas = g = statEl = null; pacs = { a: null, b: null }; ghosts = []; rp = null; },
         onData(msg) {
             if (msg.t === 'maze' && !auth) parse(msg.grid.split('|'));
             else if (msg.t === 's' && !auth) { view = msg.v; }
