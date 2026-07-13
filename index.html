@@ -80,6 +80,7 @@
         </span>
     </div>
 
+    <script src="apps/sfx.js"></script>
     <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -265,6 +266,16 @@
         //   - Adding an app = drop apps/<name>.js (+ optional .css) and add one
         //     line to this manifest. No script tags needed.
         // ======================================================================
+        const appSound = (kind) => window.AppmegleSound?.play?.(kind);
+        const appMessageSound = (msg) => {
+            const t = String(msg?.t || '');
+            if (['eat', 'g', 'play', 'rev'].includes(t)) return appSound('score');
+            if (['reject', 'lock'].includes(t)) return appSound('wrong');
+            if (['restart', 'reset', 'newreq', 'maze', 'q'].includes(t)) return appSound('start');
+            if (['result', 'over', 'win'].includes(t)) return appSound('win');
+            if (t === 'dead') return appSound('lose');
+        };
+        appStage.addEventListener('pointerup', () => appSound('tap'));
         window.Appmegle = {
             _manifest: [
             { id: "qubic", label: "3D Tic-Tac-Toe", src: "apps/qubic.js" },
@@ -415,7 +426,7 @@
                     if (this._active !== id) return;        // closed or switched while downloading
                     const app = this._apps[id];
                     appStage.innerHTML = '';
-                    app.mount({ root: appStage, send: (o) => send(Object.assign({ app: id }, o)), amCaller });
+                    app.mount({ root: appStage, send: (o) => { appMessageSound(o); send(Object.assign({ app: id }, o)); }, amCaller });
                     this._mounted = id;
                     const q = this._pending || []; this._pending = null;
                     if (app.onData) q.forEach(m => { try { app.onData(m); } catch (e) {} });
@@ -445,7 +456,7 @@
                 if (this._active !== msg.app) return;
                 if (this._mounted === msg.app) {
                     const app = this._apps[msg.app];
-                    if (app && app.onData) app.onData(msg);
+                    appMessageSound(msg); if (app && app.onData) app.onData(msg);
                 } else if (this._pending) this._pending.push(msg);   // still downloading — replay after mount
             }
         };
