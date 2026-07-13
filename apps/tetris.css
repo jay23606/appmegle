@@ -1,7 +1,10 @@
 /* Tetris */
 #tt-canvas {
     width: min(94vw, 76vh, 420px); aspect-ratio: 400 / 500;
-    background: rgba(15,15,30,.42); border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
+    border: 1px solid rgba(215,150,255,.48); border-radius: 16px;
+    background: radial-gradient(circle at 50% 18%, rgba(144,75,224,.3), rgba(13,10,31,.9) 70%);
+    box-shadow: 0 0 0 5px rgba(16,10,35,.54), 0 18px 48px rgba(0,0,0,.65), inset 0 0 28px rgba(212,159,255,.17);
 }
-#tt-pad { display: flex; gap: 8px; }
-#tt-pad button { width: 54px; height: 46px; border: 0; border-radius: 8px; background: rgba(255,255,255,.85); color: #111; font-size: 18px; cursor: pointer; touch-action: none; }
+#tt-pad { display:flex;gap:8px;padding:7px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(12,9,28,.68); }
+#tt-pad button { width:54px;height:46px;border:1px solid rgba(255,255,255,.22);border-radius:11px;background:linear-gradient(145deg,#b04ce0,#604ce0);color:#fff;font-size:18px;cursor:pointer;touch-action:none;box-shadow:0 4px 12px #0006; }
+#tt-pad button:active{transform:translateY(1px);filter:brightness(1.16)}
