@@ -11,7 +11,7 @@
     let ctx = null, auth = false, me = 'a', raf = 0, canvas = null, g = null, statEl = null;
     let grid = [], dots = new Set(), pellets = new Set(), wallAt = null;
     let pacs = { a: null, b: null }, ghosts = [], score = { a: 0, b: 0 }, fright = 0, over = false, winner = null;
-    let desired = -1, oppDir = -1, lastT = 0, lastSend = 0, view = null, onKey = null;
+    let desired = -1, oppDir = -1, lastT = 0, lastSend = 0, view = null, onKey = null, onTap = null;
 
     const genMaze = (seed) => {
         const rnd = mulberry32(seed >>> 0), wall = Array.from({ length: GH }, () => Array(GW).fill(true));
@@ -141,11 +141,18 @@
             ctx.root.querySelector('.nb').addEventListener('click', newGame);
             ctx.root.querySelectorAll('#pm-pad button').forEach(b => b.addEventListener('click', () => setDir(+b.dataset.d)));
             onKey = (e) => { const k = { ArrowUp: 0, KeyW: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3 }[e.code]; if (k !== undefined) { e.preventDefault(); setDir(k); } };
+            onTap = (e) => {
+                const mine = auth ? pacs.a : view?.pb; if (!mine) return;
+                const r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) * canvas.width / r.width, y = (e.clientY - r.top) * canvas.height / r.height;
+                const dx = x - (mine.x * CELL + CELL / 2), dy = y - (mine.y * CELL + CELL / 2);
+                setDir(Math.abs(dx) > Math.abs(dy) ? (dx >= 0 ? 1 : 3) : (dy >= 0 ? 2 : 0));
+            };
+            canvas.addEventListener('pointerdown', onTap);
             window.addEventListener('keydown', onKey);
             if (auth) newGame(); else draw();
             lastT = performance.now(); raf = requestAnimationFrame(loop);
         },
-        unmount() { cancelAnimationFrame(raf); window.removeEventListener('keydown', onKey); ctx = canvas = g = statEl = null; pacs = { a: null, b: null }; ghosts = []; rp = null; },
+        unmount() { cancelAnimationFrame(raf); window.removeEventListener('keydown', onKey); canvas?.removeEventListener('pointerdown', onTap); ctx = canvas = g = statEl = null; pacs = { a: null, b: null }; ghosts = []; rp = null; },
         onData(msg) {
             if (msg.t === 'maze' && !auth) parse(msg.grid.split('|'));
             else if (msg.t === 's' && !auth) { view = msg.v; }
