@@ -18,4 +18,4 @@
 /* "just the outline" — transparent fill, stroke only, so the live video shows through */
 .pc { color: transparent; }
 .pc.w { -webkit-text-stroke: 2.5px #fff; text-stroke: 2.5px #fff; filter: drop-shadow(0 0 2px rgba(0,0,0,.9)); }
-.pc.b { -webkit-text-stroke: 2.5px #111; text-stroke: 2.5px #111; filter: drop-shadow(0 0 2px rgba(255,255,255,.9)); }
+.pc.b { display:inline-block; transform:scale(1.48); -webkit-text-stroke:2.5px #111; text-stroke:2.5px #111; filter:drop-shadow(0 0 2px rgba(255,255,255,.9)); }
