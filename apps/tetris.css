@@ -1,6 +1,6 @@
 /* Tetris */
 #tt-canvas {
-    width: min(94vw, 76vh, 420px); aspect-ratio: 400 / 500;
+    width: min(94vw, 76vh, 420px); aspect-ratio: 400 / 500; touch-action:none; cursor:pointer;
     border: 1px solid rgba(215,150,255,.48); border-radius: 16px;
     background: radial-gradient(circle at 50% 18%, rgba(144,75,224,.3), rgba(13,10,31,.9) 70%);
     box-shadow: 0 0 0 5px rgba(16,10,35,.54), 0 18px 48px rgba(0,0,0,.65), inset 0 0 28px rgba(212,159,255,.17);

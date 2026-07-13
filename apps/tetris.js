@@ -15,7 +15,7 @@
 
     let ctx = null, auth = false, me = 'a', raf = 0, canvas = null, g = null, statEl = null;
     let board, piece, nextT, bag, lines, pendG, dropT, over, result, phase;
-    let oppS = null, oppLn = 0, soft = 0, lastT = 0, lastBV = 0, onKey = null;
+    let oppS = null, oppLn = 0, soft = 0, lastT = 0, lastBV = 0, onKey = null, onBoardDown = null, onBoardUp = null, boardTouch = null;
 
     const refill = () => { bag = ['I','O','T','S','Z','J','L']; for (let i = bag.length-1; i > 0; i--) { const j = (Math.random()*(i+1))|0; [bag[i], bag[j]] = [bag[j], bag[i]]; } };
     const draw7 = () => { if (!bag || !bag.length) refill(); return bag.pop(); };
@@ -101,16 +101,35 @@
                 e.preventDefault();
             };
             window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKey);
+            onBoardDown = (e) => {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                boardTouch = { x: e.clientX, y: e.clientY };
+                canvas.setPointerCapture?.(e.pointerId);
+            };
+            onBoardUp = (e) => {
+                if (!boardTouch || !piece || phase !== 'play') return;
+                const r = canvas.getBoundingClientRect(), dx = e.clientX - boardTouch.x, dy = e.clientY - boardTouch.y;
+                boardTouch = null; canvas.releasePointerCapture?.(e.pointerId);
+                if (dy > Math.max(28, r.height * 0.08)) return hardDrop();
+                const x = (e.clientX - r.left) * canvas.width / r.width;
+                if (x < 12 || x > 232) return; // only the local board, not the opponent preview
+                const lane = (x - 12) / 220;
+                if (lane < 0.34) move(-1);
+                else if (lane > 0.66) move(1);
+                else rotate();
+            };
+            canvas.addEventListener('pointerdown', onBoardDown);
+            canvas.addEventListener('pointerup', onBoardUp);
             ctx.root.querySelectorAll('#tt-pad button').forEach(b => {
                 const k = b.dataset.k;
                 if (k === 'd') { b.addEventListener('pointerdown', e => { e.preventDefault(); soft = 1; }); b.addEventListener('pointerup', () => soft = 0); b.addEventListener('pointerleave', () => soft = 0); }
                 else b.addEventListener('pointerdown', e => { e.preventDefault(); if (k === 'l') move(-1); else if (k === 'r') move(1); else if (k === 'rot') rotate(); else if (k === 'hd') hardDrop(); });
             });
             newGame(false);
-            statEl.textContent = 'Clear lines to send garbage!';
+            statEl.textContent = 'Tap left / centre / right to move or rotate · swipe down to drop';
             lastT = performance.now(); raf = requestAnimationFrame(loop);
         },
-        unmount() { cancelAnimationFrame(raf); window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKey); ctx = canvas = g = statEl = board = piece = null; },
+        unmount() { cancelAnimationFrame(raf); window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKey); canvas?.removeEventListener('pointerdown', onBoardDown); canvas?.removeEventListener('pointerup', onBoardUp); ctx = canvas = g = statEl = board = piece = null; },
         onData(msg) {
             if (msg.t === 'bv') { oppS = msg.s; oppLn = msg.ln; }
             else if (msg.t === 'g') pendG += msg.n;
