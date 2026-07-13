@@ -45,7 +45,17 @@
         optEl.innerHTML = cur.o.map((o, i) => '<button class="tv-opt" data-i="' + i + '">' + o + '</button>').join('');
         optEl.querySelectorAll('button').forEach(b => { const i = +b.dataset.i;
             if (phase === 'reveal') { b.disabled = true; if (i === revealC) b.classList.add('right'); }
-            else { b.disabled = myLocked; b.addEventListener('click', () => answer(i)); }
+            else {
+                b.disabled = myLocked;
+                const choose = (event) => {
+                    event.preventDefault();
+                    const now = performance.now();
+                    if (now - (b._answeredAt || 0) < 350) return;
+                    b._answeredAt = now; answer(i);
+                };
+                b.addEventListener('pointerup', choose);
+                b.addEventListener('click', choose);
+            }
         });
         resEl.textContent = phase === 'reveal' ? (revealBy ? (revealBy === me ? 'You buzzed in first! ✓' : 'They got it') : 'Nobody got it') : (myLocked ? 'Locked out — wait for the reveal' : 'Buzz in — first correct wins!');
     };
