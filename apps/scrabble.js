@@ -4,9 +4,9 @@
 // rack onto the board), then submits; the caller validates placement + scores it and
 // re-broadcasts. Caller = player 1.
 //
-// A deliberately compact, common-English dictionary keeps the app light enough for a call.
-// Placement, premiums, cross-words, blanks and the bingo bonus are all scored locally by
-// the authoritative caller. Uncommon valid words may not be in this abridged list.
+// Word legality is checked against ENABLE1 (172,837 entries, public domain), loaded from
+// apps/scrabble-words.txt the first time the app opens. Placement, premiums, cross-words,
+// blanks and the bingo bonus are all scored locally by the authoritative caller.
 (function () {
     const VAL = { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10,'?':0 };
     const DIST = { A:9,B:2,C:2,D:4,E:12,F:2,G:3,H:2,I:9,J:1,K:1,L:4,M:2,N:6,O:8,P:2,Q:1,R:6,S:4,T:6,U:4,V:2,W:2,X:1,Y:2,Z:1,'?':2 };
@@ -17,9 +17,24 @@
     const PREM = Array.from({ length: 15 }, () => Array(15).fill(''));
     TW.forEach(([r,c]) => PREM[r][c] = 'TW'); DW.forEach(([r,c]) => PREM[r][c] = 'DW');
     TL.forEach(([r,c]) => PREM[r][c] = 'TL'); DL.forEach(([r,c]) => PREM[r][c] = 'DL');
-    const DICTIONARY = new Set(('AA AB AD AE AG AH AI AL AM AN AR AS AT AW AX AY BA BE BI BO BY DA DE DO ED EF EH EL EM EN ER ES ET EX FA FE GI GO HA HE HI HM HO ID IF IN IS IT JO KA KI KO KY LA LI LO MA ME MI MM MO MU MY NA NE NG NI NO NU OD OE OF OH OI OM ON OP OR OS OW OX OY PA PE PI QI RE SH SI SO TA TE TI TO UH UM UN UP US UT WE WO XI XU YA YE YO ZA ' +
-        'ACE ACT ADD AGE AID AIM AIR ALE ALL AND ANT ANY APE ARC ARE ARM ART ASH ASK ATE AWE AXE BAD BAG BAN BAR BAT BAY BED BEE BEG BET BID BIG BIN BIT BOB BOD BOG BOY BUD BUG BUN BUS BUT CAB CAN CAP CAR CAT CAW COD COG COP COW CRY CUB CUP CUT DAD DAM DAY DEA DEB DEN DEW DID DIE DIG DIM DIN DIP DOE DOG DOT DRY DUE DUG EAR EAT EEL EGG EGO ELF ELM END ERA EVE EWE EYE FAN FAR FAT FAX FED FEE FEW FIG FIN FIR FIT FIX FLY FOG FOR FOX FRO FUN FUR GAP GAS GAY GEM GET GIN GOD GUM GUN GUY GYM HAD HAM HAS HAT HAY HEN HER HEW HEX HID HIM HIP HIS HIT HOB HOD HOG HOP HOT HOW HUB HUE HUG HUM HUT ICE ILL INK INN IRE IVY JAM JAR JAW JET JIG JOB JOG JOT JOY JUG KEY KID KIN KIT LAB LAD LAP LAW LAY LED LEG LET LID LIE LIP LIT LOG LOT LOW LUG LYE MAD MAN MAP MAT MAY MEN MET MIX MOB MOM MOP MUD MUG NAG NAP NET NEW NIB NOD NOR NOT NOW NUT OAK OAR ODD ODE OFF OIL OLD ONE OPT ORE OUR OUT OVA OWE OWN PAD PAL PAN PAR PAT PAW PAY PEA PEG PEN PET PIE PIG PIN PIT PLY POD POP POT POW PUB PUG PUN PUP PUT RAG RAM RAN RAP RAT RAW RAY RED RIB RID RIG RIM RIP ROB ROD ROE ROT ROW RUB RUE RUG RUM RUN RUT RYE SAD SAG SAP SAT SAW SAY SEA SEE SET SEW SHE SHY SIN SIP SIR SIT SIX SKI SKY SLY SOB SOD SON SOY SPA SPY SUB SUE SUM SUN TAB TAD TAG TAN TAP TAR TAX TEA TED TEN THE TIE TIN TIP TOE TON TOO TOP TOW TOY TRY TUB TUG TWO USE VAN VET VEX VIE VOW WAD WAG WAR WAS WAX WAY WEB WED WET WHO WHY WIG WIN WIT WOE WON WOO WOW YAK YAM YAP YAW YEA YES YET YOU ZAP ZEN ZIP ZOO ' +
-        'ABLE ABOUT ACORN ACTOR ADULT AFTER AGAIN AGREE AHEAD ALIVE ALONE AMBER ANGEL ANGER ANIMAL ANSWER APPLE APRIL ARENA ARGUE ARISE ARROW ASIDE ASSET ATLAS AUDIO AVOID AWAKE AWARD BADGE BAKER BEACH BEARD BEAST BEGIN BELOW BENCH BERRY BLACK BLADE BLAME BLEND BLIND BLOCK BLOOM BOARD BOAST BONE BOOK BOOST BRAIN BRAVE BREAD BREAK BRICK BRIDE BRING BROAD BROWN BRUSH BUILD CABLE CANDY CARRY CATCH CAUSE CEDAR CHAIN CHAIR CHARM CHASE CHEAP CHECK CHEER CHEST CHIEF CHILD CHIME CHOIR CHORD CLAIM CLASS CLEAN CLEAR CLERK CLIMB CLOCK CLOSE CLOUD COACH COAST COLOR COMET COOK COOL COPPER COUCH COUNT COURT COVER CRAFT CRANE CREAM CROWN DANCE DAIRY DEATH DELTA DEPTH DIRTY DOUBT DOZEN DRAFT DREAM DRINK DRIVE EARTH EIGHT ELBOW EMPTY ENJOY ENTRY EQUAL EVENT EVERY EXACT EXTRA FAITH FALSE FARM FERRY FIELD FIGHT FINAL FIRST FLAME FLOOR FLOWER FOCUS FORCE FORGE FRESH FRONT FRUIT GIANT GLASS GLOBE GLORY GRACE GRAIN GRAND GRANT GRAPE GRASS GREAT GREEN GROUP GUIDE HABIT HAPPY HEART HEAVY HONEY HORSE HOUSE HUMAN IMAGE INBOX INDEX INNER IRON JEWEL JOINT JUDGE JUICE KINGS KNIFE LABEL LAUGH LAYER LEARN LEAST LEMON LIGHT LIMIT LION LITTLE LOCAL LOGIC LOOSE LUCKY LUNCH MAGIC MAJOR MAKER MANGO MAPLE MARCH MATCH MAYOR METAL MIGHT MINOR MODEL MONEY MONTH MOOSE MOUTH MUSIC NIGHT NOBLE NORTH NOVEL NURSE OCEAN OFFER OLIVE ONION ORDER OTHER OUTER OWNER PAINT PANEL PAPER PARTY PEACE PEARL PHONE PHOTO PIANO PIECE PILOT PITCH PIZZA PLACE PLAIN PLANT PLATE PLAYER POINT POWER PRIDE PRIME PRIZE PROUD QUEEN QUICK RADIO RAISE RANGE RIVER ROBOT ROUGH ROUND ROUTE ROYAL RULES SCALE SCENE SCORE SCOUT SENSE SHAPE SHARE SHARK SHEEP SHELF SHINE SHIRT SHORE SHORT SIGHT SILVER SKILL SLEEP SLICE SMILE SNAKE SOLAR SOUND SOUTH SPACE SPARE SPEAK SPEED SPICE SPIKE SPIRIT SPORT SPRING SQUARE STAGE STAIR STAND START STEAM STEEL STONE STORE STORM STORY STRONG SUGAR TABLE TEACH THANK THEME THING TIGER TITLE TOAST TODAY TOKEN TOOTH TOUCH TOWER TRACK TRAIN TREAT TREND TRIAL TRUCK TRUST UNDER UNION URBAN VALUE VIDEO VOICE WATER WHEEL WHITE WHOLE WOMAN WORLD WORTH YELLOW YOUNG ZEBRA').split(/\s+/));
+    // The word list lives in a sibling file rather than in this one. It is ~1.7MB
+    // of text, which GitHub Pages serves gzipped and the browser caches, and it is
+    // fetched when the app first opens rather than with the page -- so the call is
+    // not paying for it unless somebody actually starts a game.
+    //
+    // Fail open while it is in flight, and fail open for good if it never arrives.
+    // Rejecting a word somebody legitimately played is the failure that spoils a
+    // game; briefly accepting one that is not in the list costs nothing between two
+    // people on a video call, which is exactly how this app scored words back when
+    // it had no dictionary at all.
+    const WORDS_URL = new URL('scrabble-words.txt', document.currentScript.src).href;
+    let DICTIONARY = null;
+    fetch(WORDS_URL)
+        .then(r => r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status)))
+        // \r?\n, not \n: a Windows checkout stores this file CRLF, and a stray
+        // carriage return on every entry would match nothing and quietly fail open.
+        .then(t => { DICTIONARY = new Set(t.split(/\r?\n/).filter(Boolean)); })
+        .catch(() => { DICTIONARY = null; });
 
     let ctx = null, auth = false, meRole = 'a', view = null;
     // authoritative (caller)
@@ -70,8 +85,10 @@
             if (!words.length) return { ok: false, err: 'needs to make a word' };
         }
         if (!empty && !words.some(w => w.some(([r, c]) => board[r][c] && !P.has(r + ',' + c)))) return { ok: false, err: 'must connect to the board' };
-        const unknown = words.map(w => spelling(board, P, w)).find(w => !DICTIONARY.has(w));
-        if (unknown) return { ok: false, err: `${unknown.toLowerCase()} is not in the built-in dictionary` };
+        if (DICTIONARY) {   // the file stores lowercase; tiles are uppercase
+            const unknown = words.map(w => spelling(board, P, w)).find(w => !DICTIONARY.has(w.toLowerCase()));
+            if (unknown) return { ok: false, err: `${unknown.toLowerCase()} is not a word` };
+        }
         let total = 0;
         for (const w of words) {
             let sum = 0, mult = 1;
