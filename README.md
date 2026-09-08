@@ -188,6 +188,7 @@ ensures two people searching at once can't grab the same stranger (the role Fire
 - [x] Egg Buddy (a tamagotchi that lives only during this call — ephemerality as a feature)
 - [x] **Second wave complete — all 20 shipped** ✅
 - [x] Geometry Dash (rhythm auto-runner race; seed-synced procedural level, die-and-retry, first to the flag wins)
+- [x] Metro Rush (three-lane runner race; jump/slide obstacles, speed boosts, and multi-round win tracking)
 
 ### Ideas for more apps
 

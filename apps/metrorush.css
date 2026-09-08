@@ -1,0 +1,9 @@
+/* Metro Rush — translucent framing keeps the call visible around the game. */
+.mr-wrap{width:min(96vw,680px)}
+#mr-canvas{width:100%;aspect-ratio:600/390;border-radius:14px;background:#191d3b;touch-action:none;cursor:pointer;box-shadow:0 8px 30px #0009;border:1px solid #ffffff2b}
+.mr-score{padding:5px 9px;border-radius:999px;background:#10152dcc;color:#fff;font-size:12px;white-space:nowrap}
+#mr-pad{display:flex;gap:7px;justify-content:center}
+#mr-pad button{min-width:58px;height:44px;padding:0 11px;border:1px solid #ffffff44;border-radius:11px;background:linear-gradient(145deg,#5d72ee,#9a4fde);color:#fff;font-size:15px;font-weight:700;cursor:pointer;touch-action:none;box-shadow:0 4px 12px #0006}
+#mr-pad button:active{transform:translateY(2px);filter:brightness(1.2)}
+.mr-hint{font-size:11px;color:#ffffffad;text-align:center;text-shadow:0 1px 3px #000}
+@media(max-width:520px){.mr-wrap .app-bar{flex-wrap:wrap}.mr-wrap .stat{min-width:40%}.mr-score{order:3}#mr-pad button{min-width:50px;padding:0 7px;font-size:13px}}
