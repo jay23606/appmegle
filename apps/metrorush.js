@@ -4,24 +4,32 @@
 (function () {
     const W = 600, H = 390, HORIZON = 72, GROUND = 340, VIEW = 980, FINISH = 9200;
     const BASE = 300, BOOST = 455, BOOST_SECS = 2.25, GRAV = 1850, JUMP = 690;
+    const THEMES = [
+        ['#321b68','#ff758c','#10182c','#22283b'], ['#063c4a','#25c6a2','#08192f','#173441'],
+        ['#5b230a','#ffb347','#21102f','#3b2730'], ['#10195d','#6d5dfc','#180d2e','#252654'],
+        ['#4b123f','#ea4c89','#17152b','#372239'],
+    ];
     let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, raf = 0;
     let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, crash = 0;
-    let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set();
+    let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), usedSeeds = new Set(), theme = THEMES[0];
     let opp = { d: 0, l: 1, j: 0, boost: 0, crash: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
     const rndFor = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
     const build = (sd) => {
-        const rnd = rndFor(sd); course = []; let x = 520;
+        const rnd = rndFor(sd); course = []; theme = THEMES[Math.abs(sd) % THEMES.length];
+        let x = 460 + rnd() * 170, rhythm = .82 + rnd() * .42;
         while (x < FINISH - 300) {
-            const lanes = [0, 1, 2].sort(() => rnd() - .5), difficulty = x / FINISH;
-            const count = rnd() < .22 + difficulty * .2 ? 2 : 1;
+            const lanes = [0, 1, 2], difficulty = x / FINISH;
+            for (let i = lanes.length - 1; i > 0; i--) { const j = (rnd() * (i + 1)) | 0; [lanes[i], lanes[j]] = [lanes[j], lanes[i]]; }
+            const count = rnd() < .16 + difficulty * .27 ? 2 : 1;
             for (let i = 0; i < count; i++) {
                 const r = rnd(), type = r < .43 ? 'barrier' : r < .73 ? 'sign' : 'train';
                 course.push({ x, lane: lanes[i], type });
             }
             const clear = lanes.slice(count);
-            if (clear.length && rnd() < .42) course.push({ x: x + 72, lane: clear[(rnd() * clear.length) | 0], type: 'boost' });
-            x += Math.max(175, 260 - difficulty * 65) + rnd() * 90;
+            if (clear.length && rnd() < .34 + difficulty * .18) course.push({ x: x + 48 + rnd() * 72, lane: clear[(rnd() * clear.length) | 0], type: 'boost' });
+            if (rnd() < .13) rhythm = .78 + rnd() * .5;
+            x += (Math.max(165, 270 - difficulty * 72) + rnd() * 105) * rhythm;
         }
     };
     const begin = (sd, n, tally) => {
@@ -32,7 +40,16 @@
     };
     const newRound = () => {
         if (!auth) return ctx.send({ t: 'roundreq' });
-        const sd = (Math.random() * 0x7fffffff) | 0, n = round + 1;
+        // Mix cryptographic entropy, time and round number, then explicitly reject
+        // every seed already used in this call. Both peers still receive one shared
+        // seed, so their newly generated obstacle course remains identical.
+        let sd;
+        do {
+            const entropy = crypto.getRandomValues(new Uint32Array(1))[0];
+            sd = (entropy ^ Date.now() ^ Math.imul(round + 1, 0x9e3779b1)) >>> 0;
+        } while (usedSeeds.has(sd));
+        usedSeeds.add(sd);
+        const n = round + 1;
         ctx.send({ t: 'start', seed: sd, round: n, wins }); begin(sd, n, wins);
     };
     const declare = (who) => {
@@ -91,10 +108,10 @@
         g.restore();
     };
     const draw = () => {
-        if (!g) return; const grad = g.createLinearGradient(0,0,0,H); grad.addColorStop(0,'#321b68'); grad.addColorStop(.52,'#ff758c'); grad.addColorStop(1,'#10182c'); g.fillStyle = grad; g.fillRect(0,0,W,H);
+        if (!g) return; const grad = g.createLinearGradient(0,0,0,H); grad.addColorStop(0,theme[0]); grad.addColorStop(.52,theme[1]); grad.addColorStop(1,theme[2]); g.fillStyle = grad; g.fillRect(0,0,W,H);
         // Skyline and converging three-lane track.
         g.fillStyle = 'rgba(15,20,48,.7)'; for (let x = 0; x < W; x += 42) g.fillRect(x, 25 + ((x*13)%55), 34, HORIZON - 12);
-        g.fillStyle = '#22283b'; g.beginPath(); g.moveTo(W/2-35,HORIZON); g.lineTo(40,H); g.lineTo(W-40,H); g.lineTo(W/2+35,HORIZON); g.fill();
+        g.fillStyle = theme[3]; g.beginPath(); g.moveTo(W/2-35,HORIZON); g.lineTo(40,H); g.lineTo(W-40,H); g.lineTo(W/2+35,HORIZON); g.fill();
         g.strokeStyle = '#edf2ff55'; g.lineWidth = 2; [-.5,.5].forEach(k => { g.beginPath(); g.moveTo(W/2 + k*36,HORIZON); g.lineTo(W/2 + k*258,H); g.stroke(); });
         const stripe = dist % 115; for (let z = 60 - stripe; z < VIEW; z += 115) { if (z < 0) continue; const a=project(z,0), b=project(z,2); g.strokeStyle='#ffffff18'; g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); }
         for (let i = course.length - 1; i >= 0; i--) drawObject(course[i], i);
@@ -115,7 +132,7 @@
     window.Appmegle.register({
         id: 'metrorush', label: 'Metro Rush', css: 'apps/metrorush.css',
         mount(c) {
-            ctx=c; auth=ctx.amCaller; me=auth?'a':'b'; phase='idle'; winner=null; round=0; wins={a:0,b:0};
+            ctx=c; auth=ctx.amCaller; me=auth?'a':'b'; phase='idle'; winner=null; round=0; wins={a:0,b:0}; usedSeeds=new Set();
             ctx.root.innerHTML='<div class="app-col mr-wrap"><div class="app-bar"><span class="stat"></span><strong class="mr-score"></strong><button class="app-btn nb">New round</button></div><canvas id="mr-canvas" width="'+W+'" height="'+H+'"></canvas><div id="mr-pad"><button data-a="left">◀</button><button data-a="jump">⬆ Jump</button><button data-a="slide">⬇ Slide</button><button data-a="right">▶</button></div><div class="mr-hint">swipe or use arrows/WASD · collect ⚡ for a momentary speed boost</div></div>';
             canvas=ctx.root.querySelector('#mr-canvas'); g=canvas.getContext('2d'); statEl=ctx.root.querySelector('.stat'); scoreEl=ctx.root.querySelector('.mr-score'); renderScore();
             ctx.root.querySelector('.nb').addEventListener('click',newRound);
@@ -128,7 +145,7 @@
         },
         unmount(){cancelAnimationFrame(raf);window.removeEventListener('keydown',onKey);ctx=canvas=g=statEl=scoreEl=null;course=[];},
         onData(msg){
-            if(msg.t==='start'&&!auth)begin(msg.seed,msg.round,msg.wins);
+            if(msg.t==='start'&&!auth){usedSeeds.add(msg.seed);begin(msg.seed,msg.round,msg.wins);}
             else if(msg.t==='roundreq'&&auth)newRound();
             else if(msg.t==='p')opp={d:msg.d||0,l:Number(msg.l)||0,j:msg.j||0,boost:!!msg.boost,crash:!!msg.crash};
             else if(msg.t==='finish'&&auth&&!winner)declare('b');
