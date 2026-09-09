@@ -9,13 +9,14 @@
         ['#5b230a','#ffb347','#21102f','#3b2730'], ['#10195d','#6d5dfc','#180d2e','#252654'],
         ['#4b123f','#ea4c89','#17152b','#372239'],
     ];
+    const THEME_NAMES = ['Neon Rain','Emerald Metro','Sunset Yard','Midnight Express','Candy Skyline'];
     const SKINS = [['#5db4ff','#eaf7ff'],['#79e06b','#efffe9'],['#ff5f9d','#fff0f7'],['#b889ff','#f6efff'],['#ffb13b','#fff6df']];
     let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, raf = 0;
     let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, magnet = 0, shield = 0, crash = 0, coins = 0;
     let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0];
     let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, bestCombo = 0, skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
     let reducedMotion = localStorage.getItem('mr-reduced-motion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
+    let opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
     const rndFor = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
     const build = (sd) => {
@@ -44,7 +45,7 @@
     const begin = (sd, n, tally) => {
         seed = sd; round = n || round + 1; if (tally) wins = { a: tally.a || 0, b: tally.b || 0 };
         build(seed); dist = 0; lane = laneX = 1; jumpY = jumpV = sliding = boost = magnet = shield = crash = coins = 0;
-        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = bestCombo = 0; winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, skin: 0 };
+        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = bestCombo = 0; winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };
         phase = 'count'; countEnd = performance.now() + 3200; renderScore();
     };
     const newRound = () => {
@@ -152,6 +153,8 @@
         const t=performance.now()/1000;g.fillStyle='#ffffff66';for(let i=0;i<10;i++){const x=(i*83+seed%71)%W,y=18+((i*37)%54);g.beginPath();g.arc(x,y,1.2+Math.sin(t+i)*.6,0,7);g.fill();}
         for(let i=0;i<28;i++){const mode=Math.abs(seed)%THEMES.length,x=(i*73+t*(mode===0?95:mode===2?28:14))%W,y=(i*41+t*(mode===1?34:58))%H;g.fillStyle=mode===1?'#dffcffaa':mode===2?'#ffd18aaa':mode===4?'#ff8bd1aa':'#ffffff66';if(mode===0)g.fillRect(x,y,1,10);else{g.beginPath();g.arc(x,y,mode===1?2.2:1.3,0,7);g.fill();}}
         const far=project(VIEW,1).x,near=project(0,1).x;g.fillStyle = theme[3]; g.beginPath(); g.moveTo(far-35,HORIZON); g.lineTo(near-260,H); g.lineTo(near+260,H); g.lineTo(far+35,HORIZON); g.fill();
+        // Repeating neon gantries provide visual landmarks and emphasize speed.
+        for(let z=220-(dist%720);z<VIEW;z+=720){if(z<80)continue;const q=project(z,1),s=.2+q.p*.9;g.save();g.translate(q.x,q.y);g.scale(s,s);g.strokeStyle=(Math.floor((dist+z)/720)%2)?'#75eaff99':'#ff5f9d99';g.lineWidth=8;g.shadowColor=g.strokeStyle;g.shadowBlur=10;g.beginPath();g.moveTo(-118,0);g.lineTo(-92,-105);g.lineTo(92,-105);g.lineTo(118,0);g.stroke();g.restore();}
         g.strokeStyle = '#edf2ff55'; g.lineWidth = 2; [-.5,.5].forEach(k => { g.beginPath();for(let z=VIEW;z>=0;z-=45){const q=project(z,1+k);if(z===VIEW)g.moveTo(q.x,q.y);else g.lineTo(q.x,q.y);}g.stroke(); });
         const stripe = dist % 115; for (let z = 60 - stripe; z < VIEW; z += 115) { if (z < 0) continue; const a=project(z,0), b=project(z,2); g.strokeStyle='#ffffff18'; g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); }
         for (let i = course.length - 1; i >= 0; i--) drawObject(course[i], i);
@@ -169,17 +172,18 @@
         const danger=course.find(o=>o.x-dist>120&&o.x-dist<430&&o.type!=='coin'&&o.type!=='boost');if(danger){const q=project(danger.x-dist,danger.lane);g.textAlign='center';g.fillStyle='#ffef72';g.font='900 18px system-ui';g.fillText('▼',q.x,q.y-70);}
         if (boost>0) { g.textAlign='center'; g.font='bold 17px system-ui'; g.fillStyle='#ffe45e'; g.fillText('⚡ SPEED BOOST '+boost.toFixed(1)+'s',W/2,48); }
         if(magnet>0||shield>0){g.textAlign='right';g.font='bold 13px system-ui';g.fillStyle='#fff';g.fillText((magnet>0?'🧲 '+magnet.toFixed(1)+'s  ':'')+(shield>0?'🛡 '+shield.toFixed(1)+'s':''),W-22,48);}
+        if(phase==='run'){const lead=Math.round((dist-opp.d)/10),label=Math.abs(lead)<2?'NECK & NECK':lead>0?'LEADING +'+lead+'m':'BEHIND '+Math.abs(lead)+'m';g.textAlign='center';g.font='900 12px system-ui';g.fillStyle=lead>=0?'#75eaff':'#ffcf70';g.fillText(label,W/2,31);if(Math.abs(lead)>25){g.font='bold 11px system-ui';g.fillStyle='#ffffffaa';g.fillText(lead<0?'A boost can close the gap':'Keep the pressure on',W/2,66);}}
         if(nearTimer>0){g.textAlign='center';g.font='900 21px system-ui';g.fillStyle='#fff';g.fillText(nearText,W/2,82);}
         if(phase==='run'&&dist>FINISH*.8){g.textAlign='center';g.font='900 16px system-ui';g.fillStyle='#fff';g.fillText('FINAL STRETCH!',W/2,72);}
         if (crash>0) { g.fillStyle='rgba(255,40,60,.2)'; g.fillRect(0,0,W,H); }
-        if (phase==='count') { const left=Math.max(0,countEnd-performance.now()),n=Math.max(0,Math.ceil((left-200)/1000));g.fillStyle='#0005';g.fillRect(0,0,W,H);g.fillStyle='#ffe45e';g.textAlign='center';g.font='900 17px system-ui';g.fillText('ROUND '+round,W/2,H/2-63);g.fillStyle='#fff';g.font='900 68px system-ui';g.fillText(n>0?n:'GO!',W/2,H/2+20); }
+        if (phase==='count') { const left=Math.max(0,countEnd-performance.now()),n=Math.max(0,Math.ceil((left-200)/1000));g.fillStyle='#0005';g.fillRect(0,0,W,H);g.fillStyle='#ffe45e';g.textAlign='center';g.font='900 17px system-ui';g.fillText((wins.a===2||wins.b===2?'MATCH POINT · ':'')+'ROUND '+round,W/2,H/2-72);g.fillStyle='#ffffffcc';g.font='bold 13px system-ui';g.fillText(THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-49);g.fillStyle='#fff';g.font='900 68px system-ui';g.fillText(n>0?n:'GO!',W/2,H/2+26); }
         if (phase==='idle') { g.fillStyle='#fff'; g.textAlign='center'; g.font='bold 25px system-ui'; g.fillText('Metro Rush',W/2,H/2-10); g.font='14px system-ui'; g.fillText('switch lanes · jump barriers · slide under signs',W/2,H/2+20); }
-        if (phase==='finished' || phase==='waiting') { g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 18px system-ui';g.fillText('ROUND '+round,W/2,H/2-62);g.fillStyle='#fff';g.font='900 42px system-ui';g.fillText(phase==='waiting'?'FINISH!':winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-12);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+30);g.font='13px system-ui';g.fillStyle='#ffffffbb';g.fillText(coins+' coins · best clean streak x'+bestCombo+' · choose New round to race again',W/2,H/2+60); }
+        if (phase==='finished' || phase==='waiting') { g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 18px system-ui';g.fillText('ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-78);g.fillStyle='#fff';g.font='900 42px system-ui';g.fillText(phase==='waiting'?'FINISH!':winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-29);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+9);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+39);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+60);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Choose New round to race again',W/2,H/2+82); }
         g.restore();
     };
     const renderScore = () => { if (scoreEl) scoreEl.textContent = `Round ${round || '–'}  ·  You ${wins[me]} – ${wins[me==='a'?'b':'a']} Them`; };
     const status = () => { if (!statEl) return; statEl.textContent = phase==='idle' ? 'Three-lane runner race' : phase==='finished' ? (winner===me?'🏆 Round won!':'Round lost') : phase==='waiting' ? 'Finished — waiting…' : `${Math.min(100,Math.round(dist/FINISH*100))}% · them ${Math.min(100,Math.round(opp.d/FINISH*100))}%`; };
-    const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t; if(phase==='count'&&performance.now()>=countEnd)phase='run'; step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,magnet:magnet>0,shield:shield>0,crash:crash>0,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
+        const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t; if(phase==='count'&&performance.now()>=countEnd)phase='run'; step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,magnet:magnet>0,shield:shield>0,crash:crash>0,coins,combo:bestCombo,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
 
     window.Appmegle.register({
         id: 'metrorush', label: 'Metro Rush', css: 'apps/metrorush.css',
@@ -201,7 +205,7 @@
         onData(msg){
             if(msg.t==='start'&&!auth){usedSeeds.add(msg.seed);begin(msg.seed,msg.round,msg.wins);}
             else if(msg.t==='roundreq'&&auth)newRound();
-            else if(msg.t==='p')opp={d:msg.d||0,l:Number(msg.l)||0,j:msg.j||0,boost:!!msg.boost,magnet:!!msg.magnet,shield:!!msg.shield,crash:!!msg.crash,skin:Number(msg.skin)||0};
+            else if(msg.t==='p')opp={d:msg.d||0,l:Number(msg.l)||0,j:msg.j||0,boost:!!msg.boost,magnet:!!msg.magnet,shield:!!msg.shield,crash:!!msg.crash,coins:Number(msg.coins)||0,combo:Number(msg.combo)||0,skin:Number(msg.skin)||0};
             else if(msg.t==='finish'&&auth&&!winner)declare('b');
             else if(msg.t==='result'){winner=msg.w;wins={a:msg.wins?.a||0,b:msg.wins?.b||0};round=msg.round||round;phase='finished';burst(W/2,H/2,70,['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);renderScore();}
         }
