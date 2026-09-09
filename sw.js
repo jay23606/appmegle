@@ -2,7 +2,7 @@
 // client, and Realtime signaling are never served stale; falls back to cache offline.
 // App files under apps/ are LAZY-LOADED by the page and runtime-cached by the
 // fetch handler below on first use — they are deliberately not pre-cached here.
-const CACHE = 'appmegle-v43';
+const CACHE = 'appmegle-v44';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './icon-192.png', './icon-512.png'
