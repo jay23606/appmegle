@@ -12,7 +12,7 @@
     const THEME_NAMES = ['Neon Rain','Emerald Metro','Sunset Yard','Midnight Express','Candy Skyline'];
     const SKINS = [['#5db4ff','#eaf7ff'],['#79e06b','#efffe9'],['#ff5f9d','#fff0f7'],['#b889ff','#f6efff'],['#ffb13b','#fff6df']];
     let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, raf = 0;
-    let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, magnet = 0, shield = 0, crash = 0, coins = 0;
+    let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, magnet = 0, shield = 0, draft = 0, crash = 0, coins = 0;
     let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0];
     let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, bestCombo = 0, skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
     let reducedMotion = localStorage.getItem('mr-reduced-motion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -44,7 +44,7 @@
     };
     const begin = (sd, n, tally) => {
         seed = sd; round = n || round + 1; if (tally) wins = { a: tally.a || 0, b: tally.b || 0 };
-        build(seed); dist = 0; lane = laneX = 1; jumpY = jumpV = sliding = boost = magnet = shield = crash = coins = 0;
+        build(seed); dist = 0; lane = laneX = 1; jumpY = jumpV = sliding = boost = magnet = shield = draft = crash = coins = 0;
         hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = bestCombo = 0; winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };
         phase = 'count'; countEnd = performance.now() + 3200; renderScore();
     };
@@ -79,6 +79,7 @@
     const toggleFx = () => { reducedMotion=!reducedMotion;localStorage.setItem('mr-reduced-motion',reducedMotion?'1':'0');updateButtons(); };
     const toggleSound = () => { window.AppmegleSound?.toggle?.();updateButtons(); };
     const updateButtons = () => { if(!ctx?.root)return;const fx=ctx.root.querySelector('.fx'),snd=ctx.root.querySelector('.snd');if(fx)fx.textContent=reducedMotion?'FX low':'FX full';if(snd)snd.textContent=window.AppmegleSound?.muted?'Sound off':'Sound on'; };
+    const buzz = (pattern) => { if(!reducedMotion)navigator.vibrate?.(pattern); };
     const burst = (x, y, n, colors) => { if(reducedMotion)n=Math.ceil(n*.25);for (let i=0;i<n;i++) particles.push({x,y,vx:(Math.random()-.5)*330,vy:-70-Math.random()*260,life:.55+Math.random()*.8,col:colors[i%colors.length],size:2+Math.random()*5}); };
     const stepFx = (dt) => { if(nearTimer>0)nearTimer-=dt;if(shake>0)shake-=dt; for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=420*dt;p.life-=dt;} particles=particles.filter(p=>p.life>0); };
 
@@ -89,6 +90,9 @@
         if (jumpV || jumpY > 0) { jumpY += jumpV * dt; jumpV -= GRAV * dt; if (jumpY <= 0) jumpY = jumpV = 0; }
         const speed = crash > 0 ? BASE * .28 : (boost > 0 ? BOOST : BASE);
         dist += speed * dt;
+        const gap=opp.d-dist,inWake=gap>55&&gap<430&&Math.abs(laneX-opp.l)<.42&&phase==='run';
+        draft=Math.max(0,Math.min(1.65,draft+(inWake?dt:-dt*.8)));
+        if(draft>=1.65){draft=0;boost=Math.max(boost,1.35);nearText='SLINGSHOT!';nearTimer=.9;burst(project(0,laneX).x,GROUND-25,22,['#75eaff','#fff','#b889ff']);buzz(35);ctx.send({t:'draft'});}
         for (let i = 0; i < course.length; i++) {
             const o = course[i], dz = o.x - dist;
             if (dz < -25 && !passed.has(i)) {
@@ -98,24 +102,24 @@
             const attracted=o.type==='coin'&&magnet>0&&dz>-15&&dz<155;
             if (dz < -24 || dz > (attracted?155:38) || (!attracted&&Math.abs(laneX - o.lane) > .34)) continue;
             if (o.type === 'coin') {
-                if (!collected.has(i)) { collected.add(i); coins++; burst(project(0,laneX).x,GROUND-jumpY-25,7,['#ffe45e','#fff2a6']); ctx.send({t:'coin'}); }
+                if (!collected.has(i)) { collected.add(i); coins++; burst(project(0,laneX).x,GROUND-jumpY-25,7,['#ffe45e','#fff2a6']);if(coins%5===0)buzz(18);ctx.send({t:'coin'}); }
                 continue;
             }
             if (o.type === 'boost') {
-                if (!collected.has(i)) { collected.add(i); boost = BOOST_SECS; burst(project(0,laneX).x,GROUND-24,18,['#ffe45e','#fff','#75eaff']); ctx.send({ t: 'boost' }); }
+                if (!collected.has(i)) { collected.add(i); boost = BOOST_SECS; burst(project(0,laneX).x,GROUND-24,18,['#ffe45e','#fff','#75eaff']);buzz(30);ctx.send({ t: 'boost' }); }
                 continue;
             }
             if (o.type === 'magnet') {
-                if (!collected.has(i)) { collected.add(i); magnet=5.5;nearText='COIN MAGNET';nearTimer=.8;burst(project(0,laneX).x,GROUND-24,18,['#ff5f9d','#fff','#b889ff']);ctx.send({t:'power'}); }
+                if (!collected.has(i)) { collected.add(i); magnet=5.5;nearText='COIN MAGNET';nearTimer=.8;burst(project(0,laneX).x,GROUND-24,18,['#ff5f9d','#fff','#b889ff']);buzz(30);ctx.send({t:'power'}); }
                 continue;
             }
             if (o.type === 'shield') {
-                if (!collected.has(i)) { collected.add(i); shield=7;nearText='SHIELD READY';nearTimer=.8;burst(project(0,laneX).x,GROUND-24,18,['#5db4ff','#fff','#75eaff']);ctx.send({t:'power'}); }
+                if (!collected.has(i)) { collected.add(i); shield=7;nearText='SHIELD READY';nearTimer=.8;burst(project(0,laneX).x,GROUND-24,18,['#5db4ff','#fff','#75eaff']);buzz(30);ctx.send({t:'power'}); }
                 continue;
             }
             if (hit.has(i)) continue;
             const safe = o.type === 'barrier' ? jumpY > 48 : o.type === 'sign' ? sliding > .08 : false;
-            if (!safe) { hit.add(i);if(shield>0){shield=0;nearText='SHIELD SAVED YOU';nearTimer=.9;burst(project(0,laneX).x,GROUND-30,28,['#5db4ff','#fff','#75eaff']);ctx.send({t:'shield'});}else{crash=.75;boost=0;combo=0;shake=reducedMotion?0:.35;burst(project(0,laneX).x,GROUND-30,25,['#ff385c','#ffb347','#fff']);ctx.send({t:'crash'});} }
+            if (!safe) { hit.add(i);if(shield>0){shield=0;nearText='SHIELD SAVED YOU';nearTimer=.9;burst(project(0,laneX).x,GROUND-30,28,['#5db4ff','#fff','#75eaff']);buzz([25,35,25]);ctx.send({t:'shield'});}else{crash=.75;boost=0;combo=0;shake=reducedMotion?0:.35;burst(project(0,laneX).x,GROUND-30,25,['#ff385c','#ffb347','#fff']);buzz(90);ctx.send({t:'crash'});} }
         }
         if (dist >= FINISH) finish();
     };
@@ -172,6 +176,7 @@
         const danger=course.find(o=>o.x-dist>120&&o.x-dist<430&&o.type!=='coin'&&o.type!=='boost');if(danger){const q=project(danger.x-dist,danger.lane);g.textAlign='center';g.fillStyle='#ffef72';g.font='900 18px system-ui';g.fillText('▼',q.x,q.y-70);}
         if (boost>0) { g.textAlign='center'; g.font='bold 17px system-ui'; g.fillStyle='#ffe45e'; g.fillText('⚡ SPEED BOOST '+boost.toFixed(1)+'s',W/2,48); }
         if(magnet>0||shield>0){g.textAlign='right';g.font='bold 13px system-ui';g.fillStyle='#fff';g.fillText((magnet>0?'🧲 '+magnet.toFixed(1)+'s  ':'')+(shield>0?'🛡 '+shield.toFixed(1)+'s':''),W-22,48);}
+        if(draft>0){const w=118,p=draft/1.65;g.fillStyle='#071225bb';g.fillRect(W/2-w/2,76,w,10);g.fillStyle='#75eaff';g.fillRect(W/2-w/2+2,78,(w-4)*p,6);g.textAlign='center';g.font='900 10px system-ui';g.fillStyle='#fff';g.fillText('DRAFT BOOST',W/2,72);}
         if(phase==='run'){const lead=Math.round((dist-opp.d)/10),label=Math.abs(lead)<2?'NECK & NECK':lead>0?'LEADING +'+lead+'m':'BEHIND '+Math.abs(lead)+'m';g.textAlign='center';g.font='900 12px system-ui';g.fillStyle=lead>=0?'#75eaff':'#ffcf70';g.fillText(label,W/2,31);if(Math.abs(lead)>25){g.font='bold 11px system-ui';g.fillStyle='#ffffffaa';g.fillText(lead<0?'A boost can close the gap':'Keep the pressure on',W/2,66);}}
         if(nearTimer>0){g.textAlign='center';g.font='900 21px system-ui';g.fillStyle='#fff';g.fillText(nearText,W/2,82);}
         if(phase==='run'&&dist>FINISH*.8){g.textAlign='center';g.font='900 16px system-ui';g.fillStyle='#fff';g.fillText('FINAL STRETCH!',W/2,72);}
