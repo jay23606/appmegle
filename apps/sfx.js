@@ -3,6 +3,7 @@
 // its AudioContext.
 (function () {
     let ac = null;
+    let muted = localStorage.getItem('appmegle-muted') === '1';
     const context = () => {
         if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
         if (ac.state === 'suspended') ac.resume().catch(() => {});
@@ -17,11 +18,16 @@
         } catch (e) {}
     };
     const play = (kind = 'tap') => {
+        if (muted) return;
         if (kind === 'tap' || kind === 'move') return tone(440, 520, 0.045, 'triangle', 0.025);
         if (kind === 'score' || kind === 'correct') { tone(520, 740, 0.09, 'sine', 0.04); return tone(740, 940, 0.11, 'sine', 0.04, 0.07); }
         if (kind === 'wrong' || kind === 'lose') return tone(240, 115, 0.18, 'sawtooth', 0.028);
         if (kind === 'start') return tone(330, 500, 0.11, 'triangle', 0.03);
         if (kind === 'win') { tone(520, 700, 0.1, 'square', 0.027); tone(700, 1040, 0.17, 'square', 0.027, 0.1); }
     };
-    window.AppmegleSound = { play };
+    window.AppmegleSound = {
+        play,
+        get muted() { return muted; },
+        toggle() { muted = !muted; localStorage.setItem('appmegle-muted', muted ? '1' : '0'); return muted; }
+    };
 })();
