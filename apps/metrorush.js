@@ -12,7 +12,7 @@
     const THEME_NAMES = ['Neon Rain','Emerald Metro','Sunset Yard','Midnight Express','Candy Skyline'];
     const MODIFIERS = ['Classic Mix','Rush Hour','Coin Frenzy','Power Surge','Precision Run'];
     const SKINS = [['#5db4ff','#eaf7ff'],['#79e06b','#efffe9'],['#ff5f9d','#fff0f7'],['#b889ff','#f6efff'],['#ffb13b','#fff6df']];
-    let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, raf = 0;
+    let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, netEl = null, raf = 0;
     let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, magnet = 0, shield = 0, draft = 0, crash = 0, coins = 0;
     let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0], modifier = 0, mission = 'coins', missionGoal = 8, missionDone = false, champRecorded = false;
     let particles = [], nearText = '', nearTimer = 0, badgeText = '', badgeTimer = 0, shake = 0, combo = 0, cleanTotal = 0, crashes = 0, maxBehind = 0, bestCombo = 0, careerBest = Number(localStorage.getItem('mr-best-combo') || 0), matchWins = Number(localStorage.getItem('mr-match-wins') || 0), skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
@@ -21,6 +21,7 @@
     let opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
     let oppView = { d: 0, l: 1, j: 0 };
     let runStart = 0, localFinish = null, remoteFinish = null, finishTimer = 0;
+    let pingTimer = 0, lastPeer = 0, latency = null;
     const rndFor = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
     const build = (sd) => {
@@ -202,15 +203,15 @@
         g.restore();
     };
     const renderScore = () => { if (scoreEl) scoreEl.textContent = `Round ${round || '–'}  ·  You ${wins[me]} – ${wins[me==='a'?'b':'a']} Them`;const b=ctx?.root?.querySelector('.nb');if(b)b.textContent=Math.max(wins.a,wins.b)>=3?'New match':'New round'; };
-    const status = () => { if (!statEl) return; statEl.textContent = phase==='idle' ? 'Three-lane runner race' : phase==='finished' ? (winner===me?'🏆 Round won!':'Round lost') : phase==='waiting' ? 'Finished — waiting…' : `${Math.min(100,Math.round(dist/FINISH*100))}% · them ${Math.min(100,Math.round(opp.d/FINISH*100))}%`; };
+    const status = () => { if (!statEl) return; statEl.textContent = phase==='idle' ? 'Three-lane runner race' : phase==='finished' ? (winner===me?'🏆 Round won!':'Round lost') : phase==='waiting' ? 'Finished — waiting…' : `${Math.min(100,Math.round(dist/FINISH*100))}% · them ${Math.min(100,Math.round(opp.d/FINISH*100))}%`;if(netEl){const age=performance.now()-lastPeer,stale=age>4200;netEl.textContent=stale?'● syncing':latency===null?'● live':'● '+latency+'ms';netEl.classList.toggle('stale',stale);} };
         const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t;oppView.d+=(opp.d-oppView.d)*Math.min(1,dt*9);oppView.l+=(opp.l-oppView.l)*Math.min(1,dt*13);oppView.j+=(opp.j-oppView.j)*Math.min(1,dt*13);if(phase==='count'&&performance.now()>=countEnd){phase='run';runStart=performance.now();} step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,magnet:magnet>0,shield:shield>0,crash:crash>0,coins,combo:bestCombo,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
 
     window.Appmegle.register({
         id: 'metrorush', label: 'Metro Rush', css: 'apps/metrorush.css',
         mount(c) {
             ctx=c; auth=ctx.amCaller; me=auth?'a':'b'; phase='idle'; winner=null; round=0; wins={a:0,b:0}; usedSeeds=new Set();champRecorded=false;
-            ctx.root.innerHTML='<div class="app-col mr-wrap"><div class="app-bar"><span class="stat"></span><strong class="mr-score"></strong><button class="app-btn skin">Style</button><button class="app-btn fx"></button><button class="app-btn snd"></button><button class="app-btn nb">New round</button></div><canvas id="mr-canvas" width="'+W+'" height="'+H+'"></canvas><div id="mr-pad"><button data-a="left">◀</button><button data-a="jump">⬆ Jump</button><button data-a="slide">⬇ Slide</button><button data-a="right">▶</button></div><div class="mr-hint">swipe or use arrows/WASD · collect ⚡ for a momentary speed boost</div></div>';
-            canvas=ctx.root.querySelector('#mr-canvas'); g=canvas.getContext('2d'); statEl=ctx.root.querySelector('.stat'); scoreEl=ctx.root.querySelector('.mr-score'); renderScore();
+            ctx.root.innerHTML='<div class="app-col mr-wrap"><div class="app-bar"><span class="stat"></span><span class="mr-net">● live</span><strong class="mr-score"></strong><button class="app-btn skin">Style</button><button class="app-btn fx"></button><button class="app-btn snd"></button><button class="app-btn nb">New round</button></div><canvas id="mr-canvas" width="'+W+'" height="'+H+'"></canvas><div id="mr-pad"><button data-a="left">◀</button><button data-a="jump">⬆ Jump</button><button data-a="slide">⬇ Slide</button><button data-a="right">▶</button></div><div class="mr-hint">swipe or use arrows/WASD · collect ⚡ for a momentary speed boost</div></div>';
+            canvas=ctx.root.querySelector('#mr-canvas'); g=canvas.getContext('2d'); statEl=ctx.root.querySelector('.stat'); scoreEl=ctx.root.querySelector('.mr-score');netEl=ctx.root.querySelector('.mr-net');lastPeer=performance.now();latency=null;renderScore();
             ctx.root.querySelector('.nb').addEventListener('click',newRound);
             ctx.root.querySelector('.skin').addEventListener('click',nextSkin);
             ctx.root.querySelector('.fx').addEventListener('click',toggleFx);ctx.root.querySelector('.snd').addEventListener('click',toggleSound);updateButtons();
@@ -219,10 +220,11 @@
             canvas.addEventListener('pointerdown',e=>{swipe={x:e.clientX,y:e.clientY};canvas.setPointerCapture?.(e.pointerId);});
             canvas.addEventListener('pointerup',e=>{if(!swipe)return;const dx=e.clientX-swipe.x,dy=e.clientY-swipe.y;swipe=null;if(Math.max(Math.abs(dx),Math.abs(dy))<22)return jump();if(Math.abs(dx)>Math.abs(dy))changeLane(dx>0?1:-1);else if(dy<0)jump();else slide();});
             onKey=e=>{if(e.repeat)return;const k=e.code;if(k==='ArrowLeft'||k==='KeyA')changeLane(-1);else if(k==='ArrowRight'||k==='KeyD')changeLane(1);else if(k==='ArrowUp'||k==='KeyW'||k==='Space')jump();else if(k==='ArrowDown'||k==='KeyS')slide();else return;e.preventDefault();}; window.addEventListener('keydown',onKey);
-            lastT=performance.now();raf=requestAnimationFrame(loop);if(auth)newRound();
+            lastT=performance.now();raf=requestAnimationFrame(loop);pingTimer=setInterval(()=>{if(auth)ctx?.send({t:'ping',at:performance.now()});},2400);if(auth)newRound();
         },
-        unmount(){cancelAnimationFrame(raf);clearTimeout(finishTimer);window.removeEventListener('keydown',onKey);ctx=canvas=g=statEl=scoreEl=null;course=[];},
+        unmount(){cancelAnimationFrame(raf);clearTimeout(finishTimer);clearInterval(pingTimer);window.removeEventListener('keydown',onKey);ctx=canvas=g=statEl=scoreEl=netEl=null;course=[];},
         onData(msg){
+            lastPeer=performance.now();if(msg.t==='ping'){ctx.send({t:'pong',at:msg.at});return;}if(msg.t==='pong'){latency=Math.max(0,Math.round(performance.now()-Number(msg.at)));return;}
             if(msg.t==='start'&&!auth){usedSeeds.add(msg.seed);begin(msg.seed,msg.round,msg.wins);}
             else if(msg.t==='roundreq'&&auth)newRound();
             else if(msg.t==='p')opp={d:msg.d||0,l:Number(msg.l)||0,j:msg.j||0,boost:!!msg.boost,magnet:!!msg.magnet,shield:!!msg.shield,crash:!!msg.crash,coins:Number(msg.coins)||0,combo:Number(msg.combo)||0,skin:Number(msg.skin)||0};

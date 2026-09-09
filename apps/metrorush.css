@@ -2,6 +2,7 @@
 .mr-wrap{width:min(96vw,680px)}
 #mr-canvas{width:100%;aspect-ratio:600/390;border-radius:14px;background:#191d3b;touch-action:none;cursor:pointer;box-shadow:0 8px 30px #0009;border:1px solid #ffffff2b}
 .mr-score{padding:5px 9px;border-radius:999px;background:#10152dcc;color:#fff;font-size:12px;white-space:nowrap}
+.mr-net{font-size:10px;font-weight:800;color:#75eaff;white-space:nowrap}.mr-net.stale{color:#ffb86b}
 .mr-wrap .skin{background:linear-gradient(135deg,#5db4ff,#b889ff,#ff5f9d)}
 .mr-wrap .fx,.mr-wrap .snd{font-size:11px;padding-inline:8px}
 #mr-pad{display:flex;gap:7px;justify-content:center}
