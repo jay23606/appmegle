@@ -14,8 +14,8 @@
     const SKINS = [['#5db4ff','#eaf7ff'],['#79e06b','#efffe9'],['#ff5f9d','#fff0f7'],['#b889ff','#f6efff'],['#ffb13b','#fff6df']];
     let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, raf = 0;
     let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, magnet = 0, shield = 0, draft = 0, crash = 0, coins = 0;
-    let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0], modifier = 0;
-    let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, bestCombo = 0, careerBest = Number(localStorage.getItem('mr-best-combo') || 0), skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
+    let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0], modifier = 0, champRecorded = false;
+    let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, bestCombo = 0, careerBest = Number(localStorage.getItem('mr-best-combo') || 0), matchWins = Number(localStorage.getItem('mr-match-wins') || 0), skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
     let reducedMotion = localStorage.getItem('mr-reduced-motion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
     let opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
     let oppView = { d: 0, l: 1, j: 0 };
@@ -53,6 +53,7 @@
     };
     const newRound = () => {
         if (!auth) return ctx.send({ t: 'roundreq' });
+        if(Math.max(wins.a,wins.b)>=3){wins={a:0,b:0};round=0;champRecorded=false;}
         // Mix cryptographic entropy, time and round number, then explicitly reject
         // every seed already used in this call. Both peers still receive one shared
         // seed, so their newly generated obstacle course remains identical.
@@ -68,8 +69,10 @@
     const declare = (who) => {
         if (winner) return; winner = who; wins[who]++; phase = 'finished';
         burst(W / 2, H / 2, 70, ['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);
+        if(wins[who]>=3){burst(W/2,H/2,120,['#ffe45e','#fff','#ff5f9d','#75eaff']);recordChampion(who);}
         ctx.send({ t: 'result', w: who, wins, round }); renderScore();
     };
+    const recordChampion = (who) => { if(champRecorded)return;champRecorded=true;if(who===me){matchWins++;localStorage.setItem('mr-match-wins',matchWins);} };
     const finish = () => {
         if (phase !== 'run') return;
         phase = 'waiting';
@@ -186,17 +189,17 @@
         if (crash>0) { g.fillStyle='rgba(255,40,60,.2)'; g.fillRect(0,0,W,H); }
         if (phase==='count') { const left=Math.max(0,countEnd-performance.now()),n=Math.max(0,Math.ceil((left-200)/1000));g.fillStyle='#0007';g.fillRect(0,0,W,H);g.fillStyle='#ffe45e';g.textAlign='center';g.font='900 17px system-ui';g.fillText((wins.a===2||wins.b===2?'MATCH POINT · ':'')+'ROUND '+round,W/2,H/2-82);g.fillStyle='#ffffffcc';g.font='bold 13px system-ui';g.fillText(THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-59);g.fillStyle='#75eaff';g.font='900 12px system-ui';g.fillText(MODIFIERS[modifier].toUpperCase(),W/2,H/2-39);g.fillStyle='#fff';g.font='900 68px system-ui';g.fillText(n>0?n:'GO!',W/2,H/2+36); }
         if (phase==='idle') { g.fillStyle='#fff'; g.textAlign='center'; g.font='bold 25px system-ui'; g.fillText('Metro Rush',W/2,H/2-10); g.font='14px system-ui'; g.fillText('switch lanes · jump barriers · slide under signs',W/2,H/2+20); }
-        if (phase==='finished' || phase==='waiting') { g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 17px system-ui';g.fillText('ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-91);g.fillStyle='#75eaff';g.font='900 11px system-ui';g.fillText(MODIFIERS[modifier].toUpperCase(),W/2,H/2-72);g.fillStyle='#fff';g.font='900 40px system-ui';g.fillText(phase==='waiting'?'FINISH!':winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-31);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+5);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+34);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+55);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Personal best x'+careerBest+'  ·  choose New round to race again',W/2,H/2+78); }
+        if (phase==='finished' || phase==='waiting') { const championship=Math.max(wins.a,wins.b)>=3;g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 17px system-ui';g.fillText(championship?'CHAMPIONSHIP COMPLETE':'ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-91);g.fillStyle='#75eaff';g.font='900 11px system-ui';g.fillText(championship?'FIRST TO THREE':MODIFIERS[modifier].toUpperCase(),W/2,H/2-72);g.fillStyle='#fff';g.font='900 40px system-ui';g.fillText(phase==='waiting'?'FINISH!':championship?(winner===me?'👑 CHAMPION!':'THEY ARE CHAMPION'):winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-31);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+5);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+34);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+55);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Personal best x'+careerBest+'  ·  match wins '+matchWins,W/2,H/2+78); }
         g.restore();
     };
-    const renderScore = () => { if (scoreEl) scoreEl.textContent = `Round ${round || '–'}  ·  You ${wins[me]} – ${wins[me==='a'?'b':'a']} Them`; };
+    const renderScore = () => { if (scoreEl) scoreEl.textContent = `Round ${round || '–'}  ·  You ${wins[me]} – ${wins[me==='a'?'b':'a']} Them`;const b=ctx?.root?.querySelector('.nb');if(b)b.textContent=Math.max(wins.a,wins.b)>=3?'New match':'New round'; };
     const status = () => { if (!statEl) return; statEl.textContent = phase==='idle' ? 'Three-lane runner race' : phase==='finished' ? (winner===me?'🏆 Round won!':'Round lost') : phase==='waiting' ? 'Finished — waiting…' : `${Math.min(100,Math.round(dist/FINISH*100))}% · them ${Math.min(100,Math.round(opp.d/FINISH*100))}%`; };
         const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t;oppView.d+=(opp.d-oppView.d)*Math.min(1,dt*9);oppView.l+=(opp.l-oppView.l)*Math.min(1,dt*13);oppView.j+=(opp.j-oppView.j)*Math.min(1,dt*13);if(phase==='count'&&performance.now()>=countEnd)phase='run'; step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,magnet:magnet>0,shield:shield>0,crash:crash>0,coins,combo:bestCombo,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
 
     window.Appmegle.register({
         id: 'metrorush', label: 'Metro Rush', css: 'apps/metrorush.css',
         mount(c) {
-            ctx=c; auth=ctx.amCaller; me=auth?'a':'b'; phase='idle'; winner=null; round=0; wins={a:0,b:0}; usedSeeds=new Set();
+            ctx=c; auth=ctx.amCaller; me=auth?'a':'b'; phase='idle'; winner=null; round=0; wins={a:0,b:0}; usedSeeds=new Set();champRecorded=false;
             ctx.root.innerHTML='<div class="app-col mr-wrap"><div class="app-bar"><span class="stat"></span><strong class="mr-score"></strong><button class="app-btn skin">Style</button><button class="app-btn fx"></button><button class="app-btn snd"></button><button class="app-btn nb">New round</button></div><canvas id="mr-canvas" width="'+W+'" height="'+H+'"></canvas><div id="mr-pad"><button data-a="left">◀</button><button data-a="jump">⬆ Jump</button><button data-a="slide">⬇ Slide</button><button data-a="right">▶</button></div><div class="mr-hint">swipe or use arrows/WASD · collect ⚡ for a momentary speed boost</div></div>';
             canvas=ctx.root.querySelector('#mr-canvas'); g=canvas.getContext('2d'); statEl=ctx.root.querySelector('.stat'); scoreEl=ctx.root.querySelector('.mr-score'); renderScore();
             ctx.root.querySelector('.nb').addEventListener('click',newRound);
@@ -215,7 +218,7 @@
             else if(msg.t==='roundreq'&&auth)newRound();
             else if(msg.t==='p')opp={d:msg.d||0,l:Number(msg.l)||0,j:msg.j||0,boost:!!msg.boost,magnet:!!msg.magnet,shield:!!msg.shield,crash:!!msg.crash,coins:Number(msg.coins)||0,combo:Number(msg.combo)||0,skin:Number(msg.skin)||0};
             else if(msg.t==='finish'&&auth&&!winner)declare('b');
-            else if(msg.t==='result'){winner=msg.w;wins={a:msg.wins?.a||0,b:msg.wins?.b||0};round=msg.round||round;phase='finished';burst(W/2,H/2,70,['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);renderScore();}
+            else if(msg.t==='result'){winner=msg.w;wins={a:msg.wins?.a||0,b:msg.wins?.b||0};round=msg.round||round;phase='finished';burst(W/2,H/2,70,['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);if(wins[msg.w]>=3){burst(W/2,H/2,120,['#ffe45e','#fff','#ff5f9d','#75eaff']);recordChampion(msg.w);}renderScore();}
         }
     });
 })();
