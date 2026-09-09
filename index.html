@@ -269,7 +269,7 @@
         const appSound = (kind) => window.AppmegleSound?.play?.(kind);
         const appMessageSound = (msg) => {
             const t = String(msg?.t || '');
-            if (['eat', 'g', 'play', 'rev', 'boost', 'power', 'shield', 'draft'].includes(t)) return appSound('score');
+            if (['eat', 'g', 'play', 'rev', 'boost', 'power', 'shield', 'draft', 'streak'].includes(t)) return appSound('score');
             if (['reject', 'lock', 'crash'].includes(t)) return appSound('wrong');
             if (['restart', 'reset', 'newreq', 'maze', 'q'].includes(t)) return appSound('start');
             if (['result', 'over', 'win'].includes(t)) return appSound('win');

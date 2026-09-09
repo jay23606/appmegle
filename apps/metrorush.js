@@ -14,9 +14,10 @@
     let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, raf = 0;
     let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, magnet = 0, shield = 0, draft = 0, crash = 0, coins = 0;
     let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0];
-    let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, bestCombo = 0, skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
+    let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, bestCombo = 0, careerBest = Number(localStorage.getItem('mr-best-combo') || 0), skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
     let reducedMotion = localStorage.getItem('mr-reduced-motion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
     let opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
+    let oppView = { d: 0, l: 1, j: 0 };
     const rndFor = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
     const build = (sd) => {
@@ -45,7 +46,7 @@
     const begin = (sd, n, tally) => {
         seed = sd; round = n || round + 1; if (tally) wins = { a: tally.a || 0, b: tally.b || 0 };
         build(seed); dist = 0; lane = laneX = 1; jumpY = jumpV = sliding = boost = magnet = shield = draft = crash = coins = 0;
-        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = bestCombo = 0; winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };
+        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = bestCombo = 0; winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };oppView={d:0,l:1,j:0};
         phase = 'count'; countEnd = performance.now() + 3200; renderScore();
     };
     const newRound = () => {
@@ -97,7 +98,7 @@
             const o = course[i], dz = o.x - dist;
             if (dz < -25 && !passed.has(i)) {
                 passed.add(i);
-                if (!hit.has(i) && !collected.has(i) && o.type !== 'coin' && o.type !== 'boost' && Math.abs(laneX-o.lane)<.58) { combo++;bestCombo=Math.max(bestCombo,combo);nearText=combo>1?'CLEAN x'+combo:'NEAR MISS!';nearTimer=.65; }
+                if (!hit.has(i) && !collected.has(i) && !['coin','boost','magnet','shield'].includes(o.type) && Math.abs(laneX-o.lane)<.58) { combo++;bestCombo=Math.max(bestCombo,combo);if(bestCombo>careerBest){careerBest=bestCombo;localStorage.setItem('mr-best-combo',careerBest);}if(combo%5===0){boost=Math.max(boost,.8);nearText='STREAK BOOST x'+combo;burst(project(0,laneX).x,GROUND-28,18,['#75eaff','#ffe45e','#fff']);buzz(24);ctx.send({t:'streak'});}else nearText=combo>1?'CLEAN x'+combo:'NEAR MISS!';nearTimer=.75; }
             }
             const attracted=o.type==='coin'&&magnet>0&&dz>-15&&dz<155;
             if (dz < -24 || dz > (attracted?155:38) || (!attracted&&Math.abs(laneX - o.lane) > .34)) continue;
@@ -164,7 +165,7 @@
         for (let i = course.length - 1; i >= 0; i--) drawObject(course[i], i);
         if(boost>0&&!reducedMotion){g.strokeStyle='#ffffff80';g.lineWidth=2;for(let i=0;i<18;i++){const x=(i*97+t*430)%W,y=85+(i*47%270);g.beginPath();g.moveTo(x,y);g.lineTo(x-35-Math.random()*45,y);g.stroke();}}
         const os=SKINS[opp.skin%SKINS.length]||SKINS[0],ms=SKINS[skin];
-        if (opp.d > dist - 60 && opp.d < dist + VIEW) { const q = project(opp.d-dist, opp.l);if(opp.shield){g.strokeStyle='#75eaffaa';g.lineWidth=3;g.beginPath();g.arc(q.x,q.y-25*q.p,18+q.p*22,0,7);g.stroke();}runner(q.x, q.y-opp.j*q.p, .25+q.p*.75, os[0], false, opp.boost?'#ffe45e':os[1],dist/24); }
+        if (oppView.d > dist - 60 && oppView.d < dist + VIEW) { const q = project(oppView.d-dist, oppView.l);if(opp.shield){g.strokeStyle='#75eaffaa';g.lineWidth=3;g.beginPath();g.arc(q.x,q.y-25*q.p,18+q.p*22,0,7);g.stroke();}if(opp.boost&&!reducedMotion){g.strokeStyle='#ffe45e88';g.lineWidth=5;g.beginPath();g.moveTo(q.x,q.y);g.lineTo(q.x,q.y+22*q.p);g.stroke();}runner(q.x, q.y-oppView.j*q.p, .25+q.p*.75, os[0], false, opp.boost?'#ffe45e':os[1],dist/24); }
         const myX = project(0,laneX).x; runner(myX, GROUND-jumpY, 1, ms[0], sliding>0, boost>0?'#ffe45e':ms[1],dist/20);
         if(shield>0){g.strokeStyle='#75eaffcc';g.lineWidth=4;g.shadowColor='#75eaff';g.shadowBlur=10;g.beginPath();g.arc(myX,GROUND-jumpY-23,35,0,7);g.stroke();g.shadowBlur=0;}
         const finishZ=FINISH-dist;if(finishZ>0&&finishZ<VIEW){const f=project(finishZ,1),s=.22+f.p*.95;g.save();g.translate(f.x,f.y);g.scale(s,s);g.fillStyle='#fff';g.fillRect(-112,-92,9,92);g.fillRect(103,-92,9,92);for(let x=-103;x<103;x+=20){g.fillStyle=((x/20)&1)?'#fff':'#222';g.fillRect(x,-92,20,18);}g.restore();}
@@ -183,12 +184,12 @@
         if (crash>0) { g.fillStyle='rgba(255,40,60,.2)'; g.fillRect(0,0,W,H); }
         if (phase==='count') { const left=Math.max(0,countEnd-performance.now()),n=Math.max(0,Math.ceil((left-200)/1000));g.fillStyle='#0005';g.fillRect(0,0,W,H);g.fillStyle='#ffe45e';g.textAlign='center';g.font='900 17px system-ui';g.fillText((wins.a===2||wins.b===2?'MATCH POINT · ':'')+'ROUND '+round,W/2,H/2-72);g.fillStyle='#ffffffcc';g.font='bold 13px system-ui';g.fillText(THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-49);g.fillStyle='#fff';g.font='900 68px system-ui';g.fillText(n>0?n:'GO!',W/2,H/2+26); }
         if (phase==='idle') { g.fillStyle='#fff'; g.textAlign='center'; g.font='bold 25px system-ui'; g.fillText('Metro Rush',W/2,H/2-10); g.font='14px system-ui'; g.fillText('switch lanes · jump barriers · slide under signs',W/2,H/2+20); }
-        if (phase==='finished' || phase==='waiting') { g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 18px system-ui';g.fillText('ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-78);g.fillStyle='#fff';g.font='900 42px system-ui';g.fillText(phase==='waiting'?'FINISH!':winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-29);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+9);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+39);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+60);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Choose New round to race again',W/2,H/2+82); }
+        if (phase==='finished' || phase==='waiting') { g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 18px system-ui';g.fillText('ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-82);g.fillStyle='#fff';g.font='900 42px system-ui';g.fillText(phase==='waiting'?'FINISH!':winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-34);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+4);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+34);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+55);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Personal best x'+careerBest+'  ·  choose New round to race again',W/2,H/2+78); }
         g.restore();
     };
     const renderScore = () => { if (scoreEl) scoreEl.textContent = `Round ${round || '–'}  ·  You ${wins[me]} – ${wins[me==='a'?'b':'a']} Them`; };
     const status = () => { if (!statEl) return; statEl.textContent = phase==='idle' ? 'Three-lane runner race' : phase==='finished' ? (winner===me?'🏆 Round won!':'Round lost') : phase==='waiting' ? 'Finished — waiting…' : `${Math.min(100,Math.round(dist/FINISH*100))}% · them ${Math.min(100,Math.round(opp.d/FINISH*100))}%`; };
-        const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t; if(phase==='count'&&performance.now()>=countEnd)phase='run'; step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,magnet:magnet>0,shield:shield>0,crash:crash>0,coins,combo:bestCombo,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
+        const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t;oppView.d+=(opp.d-oppView.d)*Math.min(1,dt*9);oppView.l+=(opp.l-oppView.l)*Math.min(1,dt*13);oppView.j+=(opp.j-oppView.j)*Math.min(1,dt*13);if(phase==='count'&&performance.now()>=countEnd)phase='run'; step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,magnet:magnet>0,shield:shield>0,crash:crash>0,coins,combo:bestCombo,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
 
     window.Appmegle.register({
         id: 'metrorush', label: 'Metro Rush', css: 'apps/metrorush.css',
