@@ -15,7 +15,8 @@
     let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, raf = 0;
     let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, magnet = 0, shield = 0, draft = 0, crash = 0, coins = 0;
     let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0], modifier = 0, mission = 'coins', missionGoal = 8, missionDone = false, champRecorded = false;
-    let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, cleanTotal = 0, bestCombo = 0, careerBest = Number(localStorage.getItem('mr-best-combo') || 0), matchWins = Number(localStorage.getItem('mr-match-wins') || 0), skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
+    let particles = [], nearText = '', nearTimer = 0, badgeText = '', badgeTimer = 0, shake = 0, combo = 0, cleanTotal = 0, crashes = 0, maxBehind = 0, bestCombo = 0, careerBest = Number(localStorage.getItem('mr-best-combo') || 0), matchWins = Number(localStorage.getItem('mr-match-wins') || 0), skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
+    let badges = (()=>{try{return new Set(JSON.parse(localStorage.getItem('mr-badges')||'[]'));}catch(e){return new Set();}})();
     let reducedMotion = localStorage.getItem('mr-reduced-motion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
     let opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
     let oppView = { d: 0, l: 1, j: 0 };
@@ -48,7 +49,7 @@
     const begin = (sd, n, tally) => {
         seed = sd; round = n || round + 1; if (tally) wins = { a: tally.a || 0, b: tally.b || 0 };
         build(seed); dist = 0; lane = laneX = 1; jumpY = jumpV = sliding = boost = magnet = shield = draft = crash = coins = 0;
-        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = cleanTotal = bestCombo = 0;missionDone=false;winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };oppView={d:0,l:1,j:0};
+        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = badgeText = ''; nearTimer = badgeTimer = shake = combo = cleanTotal = crashes = maxBehind = bestCombo = 0;missionDone=false;winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };oppView={d:0,l:1,j:0};
         phase = 'count'; countEnd = performance.now() + 3200; renderScore();
     };
     const newRound = () => {
@@ -69,12 +70,14 @@
     const declare = (who) => {
         if (winner) return; winner = who; wins[who]++; phase = 'finished';
         burst(W / 2, H / 2, 70, ['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);
-        if(wins[who]>=3){burst(W/2,H/2,120,['#ffe45e','#fff','#ff5f9d','#75eaff']);recordChampion(who);}
+        if(who===me&&maxBehind>300)award('comeback','COMEBACK KID');if(wins[who]>=3){burst(W/2,H/2,120,['#ffe45e','#fff','#ff5f9d','#75eaff']);recordChampion(who);if(who===me)award('champion','METRO CHAMPION');}
         ctx.send({ t: 'result', w: who, wins, round }); renderScore();
     };
     const recordChampion = (who) => { if(champRecorded)return;champRecorded=true;if(who===me){matchWins++;localStorage.setItem('mr-match-wins',matchWins);} };
+    const award = (id,label) => { if(badges.has(id))return;badges.add(id);localStorage.setItem('mr-badges',JSON.stringify([...badges]));badgeText='BADGE UNLOCKED · '+label;badgeTimer=2.4;ctx.send({t:'badge'}); };
     const finish = () => {
         if (phase !== 'run') return;
+        if(crashes===0)award('clean-finish','UNTOUCHABLE');
         phase = 'waiting';
         if (auth) declare('a'); else ctx.send({ t: 'finish' });
     };
@@ -86,9 +89,9 @@
     const toggleSound = () => { window.AppmegleSound?.toggle?.();updateButtons(); };
     const updateButtons = () => { if(!ctx?.root)return;const fx=ctx.root.querySelector('.fx'),snd=ctx.root.querySelector('.snd');if(fx)fx.textContent=reducedMotion?'FX low':'FX full';if(snd)snd.textContent=window.AppmegleSound?.muted?'Sound off':'Sound on'; };
     const buzz = (pattern) => { if(!reducedMotion)navigator.vibrate?.(pattern); };
-    const checkMission = () => { const value=mission==='coins'?coins:cleanTotal;if(missionDone||value<missionGoal)return;missionDone=true;boost=Math.max(boost,1.5);nearText='MISSION COMPLETE!';nearTimer=1.2;burst(W/2,H/2,35,['#ffe45e','#75eaff','#fff']);buzz([25,25,45]);ctx.send({t:'mission'}); };
+    const checkMission = () => { const value=mission==='coins'?coins:cleanTotal;if(missionDone||value<missionGoal)return;missionDone=true;boost=Math.max(boost,1.5);nearText='MISSION COMPLETE!';nearTimer=1.2;burst(W/2,H/2,35,['#ffe45e','#75eaff','#fff']);buzz([25,25,45]);ctx.send({t:'mission'});award('mission','MISSION READY'); };
     const burst = (x, y, n, colors) => { if(reducedMotion)n=Math.ceil(n*.25);for (let i=0;i<n;i++) particles.push({x,y,vx:(Math.random()-.5)*330,vy:-70-Math.random()*260,life:.55+Math.random()*.8,col:colors[i%colors.length],size:2+Math.random()*5}); };
-    const stepFx = (dt) => { if(nearTimer>0)nearTimer-=dt;if(shake>0)shake-=dt; for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=420*dt;p.life-=dt;} particles=particles.filter(p=>p.life>0); };
+    const stepFx = (dt) => { if(nearTimer>0)nearTimer-=dt;if(badgeTimer>0)badgeTimer-=dt;if(shake>0)shake-=dt; for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=420*dt;p.life-=dt;} particles=particles.filter(p=>p.life>0); };
 
     const step = (dt) => {
         if (phase !== 'run') return;
@@ -98,6 +101,7 @@
         const speed = crash > 0 ? BASE * .28 : (boost > 0 ? BOOST : BASE);
         dist += speed * dt;
         const gap=opp.d-dist,inWake=gap>55&&gap<430&&Math.abs(laneX-opp.l)<.42&&phase==='run';
+        maxBehind=Math.max(maxBehind,gap);
         draft=Math.max(0,Math.min(1.65,draft+(inWake?dt:-dt*.8)));
         if(draft>=1.65){draft=0;boost=Math.max(boost,1.35);nearText='SLINGSHOT!';nearTimer=.9;burst(project(0,laneX).x,GROUND-25,22,['#75eaff','#fff','#b889ff']);buzz(35);ctx.send({t:'draft'});}
         for (let i = 0; i < course.length; i++) {
@@ -126,7 +130,7 @@
             }
             if (hit.has(i)) continue;
             const safe = o.type === 'barrier' ? jumpY > 48 : o.type === 'sign' ? sliding > .08 : false;
-            if (!safe) { hit.add(i);if(shield>0){shield=0;nearText='SHIELD SAVED YOU';nearTimer=.9;burst(project(0,laneX).x,GROUND-30,28,['#5db4ff','#fff','#75eaff']);buzz([25,35,25]);ctx.send({t:'shield'});}else{crash=.75;boost=0;combo=0;shake=reducedMotion?0:.35;burst(project(0,laneX).x,GROUND-30,25,['#ff385c','#ffb347','#fff']);buzz(90);ctx.send({t:'crash'});} }
+            if (!safe) { hit.add(i);if(shield>0){shield=0;nearText='SHIELD SAVED YOU';nearTimer=.9;burst(project(0,laneX).x,GROUND-30,28,['#5db4ff','#fff','#75eaff']);buzz([25,35,25]);ctx.send({t:'shield'});}else{crashes++;crash=.75;boost=0;combo=0;shake=reducedMotion?0:.35;burst(project(0,laneX).x,GROUND-30,25,['#ff385c','#ffb347','#fff']);buzz(90);ctx.send({t:'crash'});} }
         }
         if (dist >= FINISH) finish();
     };
@@ -187,11 +191,12 @@
         if(draft>0){const w=118,p=draft/1.65;g.fillStyle='#071225bb';g.fillRect(W/2-w/2,76,w,10);g.fillStyle='#75eaff';g.fillRect(W/2-w/2+2,78,(w-4)*p,6);g.textAlign='center';g.font='900 10px system-ui';g.fillStyle='#fff';g.fillText('DRAFT BOOST',W/2,72);}
         if(phase==='run'){const lead=Math.round((dist-opp.d)/10),label=Math.abs(lead)<2?'NECK & NECK':lead>0?'LEADING +'+lead+'m':'BEHIND '+Math.abs(lead)+'m';g.textAlign='center';g.font='900 12px system-ui';g.fillStyle=lead>=0?'#75eaff':'#ffcf70';g.fillText(label,W/2,31);if(Math.abs(lead)>25){g.font='bold 11px system-ui';g.fillStyle='#ffffffaa';g.fillText(lead<0?'A boost can close the gap':'Keep the pressure on',W/2,66);}}
         if(nearTimer>0){g.textAlign='center';g.font='900 21px system-ui';g.fillStyle='#fff';g.fillText(nearText,W/2,82);}
+        if(badgeTimer>0){g.fillStyle='#0b153ddd';g.beginPath();g.roundRect(W/2-118,H-42,236,28,14);g.fill();g.textAlign='center';g.font='900 11px system-ui';g.fillStyle='#ffe45e';g.fillText('🏅 '+badgeText,W/2,H-24);}
         if(phase==='run'&&dist>FINISH*.8){g.textAlign='center';g.font='900 16px system-ui';g.fillStyle='#fff';g.fillText('FINAL STRETCH!',W/2,72);}
         if (crash>0) { g.fillStyle='rgba(255,40,60,.2)'; g.fillRect(0,0,W,H); }
         if (phase==='count') { const left=Math.max(0,countEnd-performance.now()),n=Math.max(0,Math.ceil((left-200)/1000));g.fillStyle='#0007';g.fillRect(0,0,W,H);g.fillStyle='#ffe45e';g.textAlign='center';g.font='900 17px system-ui';g.fillText((wins.a===2||wins.b===2?'MATCH POINT · ':'')+'ROUND '+round,W/2,H/2-91);g.fillStyle='#ffffffcc';g.font='bold 13px system-ui';g.fillText(THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-68);g.fillStyle='#75eaff';g.font='900 12px system-ui';g.fillText(MODIFIERS[modifier].toUpperCase(),W/2,H/2-48);g.fillStyle='#ffe45e';g.font='bold 11px system-ui';g.fillText('MISSION: '+(mission==='coins'?'COLLECT '+missionGoal+' COINS':'LAND '+missionGoal+' CLEAN DODGES'),W/2,H/2-29);g.fillStyle='#fff';g.font='900 68px system-ui';g.fillText(n>0?n:'GO!',W/2,H/2+48); }
         if (phase==='idle') { g.fillStyle='#fff'; g.textAlign='center'; g.font='bold 25px system-ui'; g.fillText('Metro Rush',W/2,H/2-10); g.font='14px system-ui'; g.fillText('switch lanes · jump barriers · slide under signs',W/2,H/2+20); }
-        if (phase==='finished' || phase==='waiting') { const championship=Math.max(wins.a,wins.b)>=3;g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 17px system-ui';g.fillText(championship?'CHAMPIONSHIP COMPLETE':'ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-91);g.fillStyle='#75eaff';g.font='900 11px system-ui';g.fillText(championship?'FIRST TO THREE':MODIFIERS[modifier].toUpperCase(),W/2,H/2-72);g.fillStyle='#fff';g.font='900 40px system-ui';g.fillText(phase==='waiting'?'FINISH!':championship?(winner===me?'👑 CHAMPION!':'THEY ARE CHAMPION'):winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-31);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+5);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+34);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+55);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Personal best x'+careerBest+'  ·  match wins '+matchWins,W/2,H/2+78); }
+        if (phase==='finished' || phase==='waiting') { const championship=Math.max(wins.a,wins.b)>=3;g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 17px system-ui';g.fillText(championship?'CHAMPIONSHIP COMPLETE':'ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-91);g.fillStyle='#75eaff';g.font='900 11px system-ui';g.fillText(championship?'FIRST TO THREE':MODIFIERS[modifier].toUpperCase(),W/2,H/2-72);g.fillStyle='#fff';g.font='900 40px system-ui';g.fillText(phase==='waiting'?'FINISH!':championship?(winner===me?'👑 CHAMPION!':'THEY ARE CHAMPION'):winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-31);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+5);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+34);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+55);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Best x'+careerBest+' · matches '+matchWins+' · badges '+badges.size+'/4',W/2,H/2+78); }
         g.restore();
     };
     const renderScore = () => { if (scoreEl) scoreEl.textContent = `Round ${round || '–'}  ·  You ${wins[me]} – ${wins[me==='a'?'b':'a']} Them`;const b=ctx?.root?.querySelector('.nb');if(b)b.textContent=Math.max(wins.a,wins.b)>=3?'New match':'New round'; };
@@ -220,7 +225,7 @@
             else if(msg.t==='roundreq'&&auth)newRound();
             else if(msg.t==='p')opp={d:msg.d||0,l:Number(msg.l)||0,j:msg.j||0,boost:!!msg.boost,magnet:!!msg.magnet,shield:!!msg.shield,crash:!!msg.crash,coins:Number(msg.coins)||0,combo:Number(msg.combo)||0,skin:Number(msg.skin)||0};
             else if(msg.t==='finish'&&auth&&!winner)declare('b');
-            else if(msg.t==='result'){winner=msg.w;wins={a:msg.wins?.a||0,b:msg.wins?.b||0};round=msg.round||round;phase='finished';burst(W/2,H/2,70,['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);if(wins[msg.w]>=3){burst(W/2,H/2,120,['#ffe45e','#fff','#ff5f9d','#75eaff']);recordChampion(msg.w);}renderScore();}
+            else if(msg.t==='result'){winner=msg.w;wins={a:msg.wins?.a||0,b:msg.wins?.b||0};round=msg.round||round;phase='finished';burst(W/2,H/2,70,['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);if(crashes===0)award('clean-finish','UNTOUCHABLE');if(msg.w===me&&maxBehind>300)award('comeback','COMEBACK KID');if(wins[msg.w]>=3){burst(W/2,H/2,120,['#ffe45e','#fff','#ff5f9d','#75eaff']);recordChampion(msg.w);if(msg.w===me)award('champion','METRO CHAMPION');}renderScore();}
         }
     });
 })();
