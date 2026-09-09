@@ -11,11 +11,11 @@
     ];
     const SKINS = [['#5db4ff','#eaf7ff'],['#79e06b','#efffe9'],['#ff5f9d','#fff0f7'],['#b889ff','#f6efff'],['#ffb13b','#fff6df']];
     let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, raf = 0;
-    let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, crash = 0, coins = 0;
+    let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, magnet = 0, shield = 0, crash = 0, coins = 0;
     let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0];
     let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, bestCombo = 0, skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
     let reducedMotion = localStorage.getItem('mr-reduced-motion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let opp = { d: 0, l: 1, j: 0, boost: 0, crash: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
+    let opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
     const rndFor = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
     const build = (sd) => {
@@ -30,7 +30,7 @@
                 course.push({ x, lane: lanes[i], type });
             }
             const clear = lanes.slice(count);
-            if (clear.length && rnd() < .34 + difficulty * .18) course.push({ x: x + 48 + rnd() * 72, lane: clear[(rnd() * clear.length) | 0], type: 'boost' });
+            if (clear.length && rnd() < .34 + difficulty * .18) { const p=rnd(),type=p<.58?'boost':p<.81?'magnet':'shield';course.push({ x: x + 48 + rnd() * 72, lane: clear[(rnd() * clear.length) | 0], type }); }
             else if (clear.length && rnd() < .62) {
                 const coinLane = clear[(rnd() * clear.length) | 0], n = 3 + ((rnd() * 3) | 0);
                 for (let i = 0; i < n; i++) course.push({ x: x + 42 + i * 34, lane: coinLane, type: 'coin' });
@@ -43,8 +43,8 @@
     };
     const begin = (sd, n, tally) => {
         seed = sd; round = n || round + 1; if (tally) wins = { a: tally.a || 0, b: tally.b || 0 };
-        build(seed); dist = 0; lane = laneX = 1; jumpY = jumpV = sliding = boost = crash = coins = 0;
-        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = bestCombo = 0; winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, crash: 0, skin: 0 };
+        build(seed); dist = 0; lane = laneX = 1; jumpY = jumpV = sliding = boost = magnet = shield = crash = coins = 0;
+        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = bestCombo = 0; winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, skin: 0 };
         phase = 'count'; countEnd = performance.now() + 3200; renderScore();
     };
     const newRound = () => {
@@ -84,7 +84,7 @@
     const step = (dt) => {
         if (phase !== 'run') return;
         laneX += (lane - laneX) * Math.min(1, dt * 14);
-        if (boost > 0) boost -= dt; if (crash > 0) crash -= dt; if (sliding > 0) sliding -= dt;
+        if (boost > 0) boost -= dt; if (magnet > 0) magnet -= dt; if (shield > 0) shield -= dt; if (crash > 0) crash -= dt; if (sliding > 0) sliding -= dt;
         if (jumpV || jumpY > 0) { jumpY += jumpV * dt; jumpV -= GRAV * dt; if (jumpY <= 0) jumpY = jumpV = 0; }
         const speed = crash > 0 ? BASE * .28 : (boost > 0 ? BOOST : BASE);
         dist += speed * dt;
@@ -94,7 +94,8 @@
                 passed.add(i);
                 if (!hit.has(i) && !collected.has(i) && o.type !== 'coin' && o.type !== 'boost' && Math.abs(laneX-o.lane)<.58) { combo++;bestCombo=Math.max(bestCombo,combo);nearText=combo>1?'CLEAN x'+combo:'NEAR MISS!';nearTimer=.65; }
             }
-            if (dz < -24 || dz > 38 || Math.abs(laneX - o.lane) > .34) continue;
+            const attracted=o.type==='coin'&&magnet>0&&dz>-15&&dz<155;
+            if (dz < -24 || dz > (attracted?155:38) || (!attracted&&Math.abs(laneX - o.lane) > .34)) continue;
             if (o.type === 'coin') {
                 if (!collected.has(i)) { collected.add(i); coins++; burst(project(0,laneX).x,GROUND-jumpY-25,7,['#ffe45e','#fff2a6']); ctx.send({t:'coin'}); }
                 continue;
@@ -103,9 +104,17 @@
                 if (!collected.has(i)) { collected.add(i); boost = BOOST_SECS; burst(project(0,laneX).x,GROUND-24,18,['#ffe45e','#fff','#75eaff']); ctx.send({ t: 'boost' }); }
                 continue;
             }
+            if (o.type === 'magnet') {
+                if (!collected.has(i)) { collected.add(i); magnet=5.5;nearText='COIN MAGNET';nearTimer=.8;burst(project(0,laneX).x,GROUND-24,18,['#ff5f9d','#fff','#b889ff']);ctx.send({t:'power'}); }
+                continue;
+            }
+            if (o.type === 'shield') {
+                if (!collected.has(i)) { collected.add(i); shield=7;nearText='SHIELD READY';nearTimer=.8;burst(project(0,laneX).x,GROUND-24,18,['#5db4ff','#fff','#75eaff']);ctx.send({t:'power'}); }
+                continue;
+            }
             if (hit.has(i)) continue;
             const safe = o.type === 'barrier' ? jumpY > 48 : o.type === 'sign' ? sliding > .08 : false;
-            if (!safe) { hit.add(i); crash = .75; boost = 0; combo=0;shake=reducedMotion?0:.35; burst(project(0,laneX).x,GROUND-30,25,['#ff385c','#ffb347','#fff']); ctx.send({ t: 'crash' }); }
+            if (!safe) { hit.add(i);if(shield>0){shield=0;nearText='SHIELD SAVED YOU';nearTimer=.9;burst(project(0,laneX).x,GROUND-30,28,['#5db4ff','#fff','#75eaff']);ctx.send({t:'shield'});}else{crash=.75;boost=0;combo=0;shake=reducedMotion?0:.35;burst(project(0,laneX).x,GROUND-30,25,['#ff385c','#ffb347','#fff']);ctx.send({t:'crash'});} }
         }
         if (dist >= FINISH) finish();
     };
@@ -129,6 +138,8 @@
         g.save(); g.translate(q.x, q.y); g.scale(s, s);
         if (o.type === 'coin') { if(!collected.has(i)){g.shadowColor='#ffe45e';g.shadowBlur=12;g.fillStyle='#ffd83d';g.beginPath();g.ellipse(0,-24,9,13,0,0,7);g.fill();g.strokeStyle='#fff2a6';g.lineWidth=2;g.stroke();} }
         else if (o.type === 'boost') { if (!collected.has(i)) { g.shadowColor = '#ffe45e'; g.shadowBlur = 18; g.fillStyle = '#ffd83d'; g.beginPath(); g.moveTo(0,-34); g.lineTo(15,-10); g.lineTo(5,-10); g.lineTo(18,8); g.lineTo(-12,-5); g.lineTo(-2,-5); g.closePath(); g.fill(); } }
+        else if (o.type === 'magnet') { if(!collected.has(i)){g.shadowColor='#ff5f9d';g.shadowBlur=18;g.strokeStyle='#ff5f9d';g.lineWidth=8;g.beginPath();g.arc(0,-20,15,.1,Math.PI-.1);g.stroke();g.fillStyle='#fff';g.fillRect(-19,-23,8,12);g.fillRect(11,-23,8,12);} }
+        else if (o.type === 'shield') { if(!collected.has(i)){g.shadowColor='#75eaff';g.shadowBlur=18;g.fillStyle='#5db4ff';g.beginPath();g.moveTo(0,-43);g.lineTo(20,-34);g.lineTo(16,-8);g.lineTo(0,7);g.lineTo(-16,-8);g.lineTo(-20,-34);g.closePath();g.fill();g.strokeStyle='#fff';g.lineWidth=3;g.stroke();} }
         else if (o.type === 'barrier') { g.fillStyle = '#ff7043'; g.fillRect(-25, -35, 50, 35); g.fillStyle = '#fff'; for (let x = -22; x < 22; x += 16) { g.save(); g.translate(x,-18); g.rotate(-.55); g.fillRect(-3,-20,6,40); g.restore(); } }
         else if (o.type === 'sign') { g.fillStyle = '#ffc83d'; g.fillRect(-34, -64, 68, 20); g.fillStyle = '#666'; g.fillRect(-29,-44,5,44); g.fillRect(24,-44,5,44); }
         else { const bob=Math.sin(performance.now()/130+o.x)*3;g.translate(0,bob);g.fillStyle = '#ef3f67'; g.beginPath(); g.roundRect(-31,-88,62,88,8); g.fill();g.fillStyle='#fff8ad';g.shadowColor='#fff8ad';g.shadowBlur=12;g.beginPath();g.arc(-17,-14,5,0,7);g.arc(17,-14,5,0,7);g.fill();g.shadowBlur=0;g.fillStyle = '#bdeaff'; g.fillRect(-22,-76,44,23); g.fillStyle = '#1b2140'; g.fillRect(-22,-40,44,7); }
@@ -146,8 +157,9 @@
         for (let i = course.length - 1; i >= 0; i--) drawObject(course[i], i);
         if(boost>0&&!reducedMotion){g.strokeStyle='#ffffff80';g.lineWidth=2;for(let i=0;i<18;i++){const x=(i*97+t*430)%W,y=85+(i*47%270);g.beginPath();g.moveTo(x,y);g.lineTo(x-35-Math.random()*45,y);g.stroke();}}
         const os=SKINS[opp.skin%SKINS.length]||SKINS[0],ms=SKINS[skin];
-        if (opp.d > dist - 60 && opp.d < dist + VIEW) { const q = project(opp.d-dist, opp.l); runner(q.x, q.y-opp.j*q.p, .25+q.p*.75, os[0], false, opp.boost?'#ffe45e':os[1],dist/24); }
+        if (opp.d > dist - 60 && opp.d < dist + VIEW) { const q = project(opp.d-dist, opp.l);if(opp.shield){g.strokeStyle='#75eaffaa';g.lineWidth=3;g.beginPath();g.arc(q.x,q.y-25*q.p,18+q.p*22,0,7);g.stroke();}runner(q.x, q.y-opp.j*q.p, .25+q.p*.75, os[0], false, opp.boost?'#ffe45e':os[1],dist/24); }
         const myX = project(0,laneX).x; runner(myX, GROUND-jumpY, 1, ms[0], sliding>0, boost>0?'#ffe45e':ms[1],dist/20);
+        if(shield>0){g.strokeStyle='#75eaffcc';g.lineWidth=4;g.shadowColor='#75eaff';g.shadowBlur=10;g.beginPath();g.arc(myX,GROUND-jumpY-23,35,0,7);g.stroke();g.shadowBlur=0;}
         const finishZ=FINISH-dist;if(finishZ>0&&finishZ<VIEW){const f=project(finishZ,1),s=.22+f.p*.95;g.save();g.translate(f.x,f.y);g.scale(s,s);g.fillStyle='#fff';g.fillRect(-112,-92,9,92);g.fillRect(103,-92,9,92);for(let x=-103;x<103;x+=20){g.fillStyle=((x/20)&1)?'#fff':'#222';g.fillRect(x,-92,20,18);}g.restore();}
         for(const p of particles){g.globalAlpha=Math.max(0,p.life);g.fillStyle=p.col;g.fillRect(p.x,p.y,p.size,p.size);}g.globalAlpha=1;
         g.fillStyle='#ffffff24'; g.fillRect(18,16,W-36,7); g.fillStyle=me==='a'?'#5db4ff':'#ff9d3d'; g.fillRect(18,16,(W-36)*Math.min(1,dist/FINISH),7); g.fillStyle=me==='a'?'#ff9d3d':'#5db4ff'; g.fillRect(18+(W-36)*Math.min(1,opp.d/FINISH)-4,12,8,15);
@@ -156,6 +168,7 @@
         if(combo>1){g.fillStyle='#fff';g.fillText('Clean x'+combo,18,64);}
         const danger=course.find(o=>o.x-dist>120&&o.x-dist<430&&o.type!=='coin'&&o.type!=='boost');if(danger){const q=project(danger.x-dist,danger.lane);g.textAlign='center';g.fillStyle='#ffef72';g.font='900 18px system-ui';g.fillText('▼',q.x,q.y-70);}
         if (boost>0) { g.textAlign='center'; g.font='bold 17px system-ui'; g.fillStyle='#ffe45e'; g.fillText('⚡ SPEED BOOST '+boost.toFixed(1)+'s',W/2,48); }
+        if(magnet>0||shield>0){g.textAlign='right';g.font='bold 13px system-ui';g.fillStyle='#fff';g.fillText((magnet>0?'🧲 '+magnet.toFixed(1)+'s  ':'')+(shield>0?'🛡 '+shield.toFixed(1)+'s':''),W-22,48);}
         if(nearTimer>0){g.textAlign='center';g.font='900 21px system-ui';g.fillStyle='#fff';g.fillText(nearText,W/2,82);}
         if(phase==='run'&&dist>FINISH*.8){g.textAlign='center';g.font='900 16px system-ui';g.fillStyle='#fff';g.fillText('FINAL STRETCH!',W/2,72);}
         if (crash>0) { g.fillStyle='rgba(255,40,60,.2)'; g.fillRect(0,0,W,H); }
@@ -166,7 +179,7 @@
     };
     const renderScore = () => { if (scoreEl) scoreEl.textContent = `Round ${round || '–'}  ·  You ${wins[me]} – ${wins[me==='a'?'b':'a']} Them`; };
     const status = () => { if (!statEl) return; statEl.textContent = phase==='idle' ? 'Three-lane runner race' : phase==='finished' ? (winner===me?'🏆 Round won!':'Round lost') : phase==='waiting' ? 'Finished — waiting…' : `${Math.min(100,Math.round(dist/FINISH*100))}% · them ${Math.min(100,Math.round(opp.d/FINISH*100))}%`; };
-    const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t; if(phase==='count'&&performance.now()>=countEnd)phase='run'; step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,crash:crash>0,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
+    const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t; if(phase==='count'&&performance.now()>=countEnd)phase='run'; step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,magnet:magnet>0,shield:shield>0,crash:crash>0,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
 
     window.Appmegle.register({
         id: 'metrorush', label: 'Metro Rush', css: 'apps/metrorush.css',
@@ -188,7 +201,7 @@
         onData(msg){
             if(msg.t==='start'&&!auth){usedSeeds.add(msg.seed);begin(msg.seed,msg.round,msg.wins);}
             else if(msg.t==='roundreq'&&auth)newRound();
-            else if(msg.t==='p')opp={d:msg.d||0,l:Number(msg.l)||0,j:msg.j||0,boost:!!msg.boost,crash:!!msg.crash,skin:Number(msg.skin)||0};
+            else if(msg.t==='p')opp={d:msg.d||0,l:Number(msg.l)||0,j:msg.j||0,boost:!!msg.boost,magnet:!!msg.magnet,shield:!!msg.shield,crash:!!msg.crash,skin:Number(msg.skin)||0};
             else if(msg.t==='finish'&&auth&&!winner)declare('b');
             else if(msg.t==='result'){winner=msg.w;wins={a:msg.wins?.a||0,b:msg.wins?.b||0};round=msg.round||round;phase='finished';burst(W/2,H/2,70,['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);renderScore();}
         }
