@@ -20,6 +20,7 @@
     let reducedMotion = localStorage.getItem('mr-reduced-motion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
     let opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
     let oppView = { d: 0, l: 1, j: 0 };
+    let runStart = 0, localFinish = null, remoteFinish = null, finishTimer = 0;
     const rndFor = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
     const build = (sd) => {
@@ -49,7 +50,7 @@
     const begin = (sd, n, tally) => {
         seed = sd; round = n || round + 1; if (tally) wins = { a: tally.a || 0, b: tally.b || 0 };
         build(seed); dist = 0; lane = laneX = 1; jumpY = jumpV = sliding = boost = magnet = shield = draft = crash = coins = 0;
-        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = badgeText = ''; nearTimer = badgeTimer = shake = combo = cleanTotal = crashes = maxBehind = bestCombo = 0;missionDone=false;winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };oppView={d:0,l:1,j:0};
+        clearTimeout(finishTimer);finishTimer=0;runStart=0;localFinish=remoteFinish=null;hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = badgeText = ''; nearTimer = badgeTimer = shake = combo = cleanTotal = crashes = maxBehind = bestCombo = 0;missionDone=false;winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };oppView={d:0,l:1,j:0};
         phase = 'count'; countEnd = performance.now() + 3200; renderScore();
     };
     const newRound = () => {
@@ -68,18 +69,19 @@
         ctx.send({ t: 'start', seed: sd, round: n, wins }); begin(sd, n, wins);
     };
     const declare = (who) => {
-        if (winner) return; winner = who; wins[who]++; phase = 'finished';
+        if (winner) return;clearTimeout(finishTimer);finishTimer=0; winner = who; wins[who]++; phase = 'finished';
         burst(W / 2, H / 2, 70, ['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);
         if(who===me&&maxBehind>300)award('comeback','COMEBACK KID');if(wins[who]>=3){burst(W/2,H/2,120,['#ffe45e','#fff','#ff5f9d','#75eaff']);recordChampion(who);if(who===me)award('champion','METRO CHAMPION');}
         ctx.send({ t: 'result', w: who, wins, round }); renderScore();
     };
     const recordChampion = (who) => { if(champRecorded)return;champRecorded=true;if(who===me){matchWins++;localStorage.setItem('mr-match-wins',matchWins);} };
     const award = (id,label) => { if(badges.has(id))return;badges.add(id);localStorage.setItem('mr-badges',JSON.stringify([...badges]));badgeText='BADGE UNLOCKED · '+label;badgeTimer=2.4;ctx.send({t:'badge'}); };
+    const resolveFinish = () => { if(!auth||winner||finishTimer)return;finishTimer=setTimeout(()=>{finishTimer=0;if(winner)return;if(localFinish!==null&&remoteFinish!==null)declare(remoteFinish<localFinish?'b':'a');else if(remoteFinish!==null)declare('b');else if(localFinish!==null)declare('a');},260); };
     const finish = () => {
         if (phase !== 'run') return;
         if(crashes===0)award('clean-finish','UNTOUCHABLE');
-        phase = 'waiting';
-        if (auth) declare('a'); else ctx.send({ t: 'finish' });
+        localFinish=Math.round(performance.now()-runStart);phase = 'waiting';
+        if (auth) resolveFinish(); else ctx.send({ t: 'finish', time: localFinish });
     };
     const changeLane = (dir) => { if (phase === 'run' || phase === 'count') lane = Math.max(0, Math.min(2, lane + dir)); };
     const jump = () => { if (phase === 'idle') return newRound(); if (phase === 'finished') return; if (jumpY <= 0 && sliding <= 0) jumpV = JUMP; };
@@ -196,12 +198,12 @@
         if (crash>0) { g.fillStyle='rgba(255,40,60,.2)'; g.fillRect(0,0,W,H); }
         if (phase==='count') { const left=Math.max(0,countEnd-performance.now()),n=Math.max(0,Math.ceil((left-200)/1000));g.fillStyle='#0007';g.fillRect(0,0,W,H);g.fillStyle='#ffe45e';g.textAlign='center';g.font='900 17px system-ui';g.fillText((wins.a===2||wins.b===2?'MATCH POINT · ':'')+'ROUND '+round,W/2,H/2-91);g.fillStyle='#ffffffcc';g.font='bold 13px system-ui';g.fillText(THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-68);g.fillStyle='#75eaff';g.font='900 12px system-ui';g.fillText(MODIFIERS[modifier].toUpperCase(),W/2,H/2-48);g.fillStyle='#ffe45e';g.font='bold 11px system-ui';g.fillText('MISSION: '+(mission==='coins'?'COLLECT '+missionGoal+' COINS':'LAND '+missionGoal+' CLEAN DODGES'),W/2,H/2-29);g.fillStyle='#fff';g.font='900 68px system-ui';g.fillText(n>0?n:'GO!',W/2,H/2+48); }
         if (phase==='idle') { g.fillStyle='#fff'; g.textAlign='center'; g.font='bold 25px system-ui'; g.fillText('Metro Rush',W/2,H/2-10); g.font='14px system-ui'; g.fillText('switch lanes · jump barriers · slide under signs',W/2,H/2+20); }
-        if (phase==='finished' || phase==='waiting') { const championship=Math.max(wins.a,wins.b)>=3;g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 17px system-ui';g.fillText(championship?'CHAMPIONSHIP COMPLETE':'ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-91);g.fillStyle='#75eaff';g.font='900 11px system-ui';g.fillText(championship?'FIRST TO THREE':MODIFIERS[modifier].toUpperCase(),W/2,H/2-72);g.fillStyle='#fff';g.font='900 40px system-ui';g.fillText(phase==='waiting'?'FINISH!':championship?(winner===me?'👑 CHAMPION!':'THEY ARE CHAMPION'):winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-31);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+5);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+34);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+55);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Best x'+careerBest+' · matches '+matchWins+' · badges '+badges.size+'/4',W/2,H/2+78); }
+        if (phase==='finished' || phase==='waiting') { const championship=Math.max(wins.a,wins.b)>=3;g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 17px system-ui';g.fillText(championship?'CHAMPIONSHIP COMPLETE':'ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-91);g.fillStyle='#75eaff';g.font='900 11px system-ui';g.fillText(championship?'FIRST TO THREE':MODIFIERS[modifier].toUpperCase(),W/2,H/2-72);g.fillStyle='#fff';g.font='900 40px system-ui';g.fillText(phase==='waiting'?'PHOTO FINISH…':championship?(winner===me?'👑 CHAMPION!':'THEY ARE CHAMPION'):winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-31);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+5);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+34);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+55);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Best x'+careerBest+' · matches '+matchWins+' · badges '+badges.size+'/4',W/2,H/2+78); }
         g.restore();
     };
     const renderScore = () => { if (scoreEl) scoreEl.textContent = `Round ${round || '–'}  ·  You ${wins[me]} – ${wins[me==='a'?'b':'a']} Them`;const b=ctx?.root?.querySelector('.nb');if(b)b.textContent=Math.max(wins.a,wins.b)>=3?'New match':'New round'; };
     const status = () => { if (!statEl) return; statEl.textContent = phase==='idle' ? 'Three-lane runner race' : phase==='finished' ? (winner===me?'🏆 Round won!':'Round lost') : phase==='waiting' ? 'Finished — waiting…' : `${Math.min(100,Math.round(dist/FINISH*100))}% · them ${Math.min(100,Math.round(opp.d/FINISH*100))}%`; };
-        const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t;oppView.d+=(opp.d-oppView.d)*Math.min(1,dt*9);oppView.l+=(opp.l-oppView.l)*Math.min(1,dt*13);oppView.j+=(opp.j-oppView.j)*Math.min(1,dt*13);if(phase==='count'&&performance.now()>=countEnd)phase='run'; step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,magnet:magnet>0,shield:shield>0,crash:crash>0,coins,combo:bestCombo,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
+        const loop = (t) => { const dt=Math.min(.035,(t-lastT)/1000||0); lastT=t;oppView.d+=(opp.d-oppView.d)*Math.min(1,dt*9);oppView.l+=(opp.l-oppView.l)*Math.min(1,dt*13);oppView.j+=(opp.j-oppView.j)*Math.min(1,dt*13);if(phase==='count'&&performance.now()>=countEnd){phase='run';runStart=performance.now();} step(dt);stepFx(dt); if (phase==='run' && t-lastSend>80) { lastSend=t; ctx.send({t:'p',d:Math.round(dist),l:+laneX.toFixed(2),j:Math.round(jumpY),boost:boost>0,magnet:magnet>0,shield:shield>0,crash:crash>0,coins,combo:bestCombo,skin}); } draw(); status(); raf=requestAnimationFrame(loop); };
 
     window.Appmegle.register({
         id: 'metrorush', label: 'Metro Rush', css: 'apps/metrorush.css',
@@ -219,13 +221,13 @@
             onKey=e=>{if(e.repeat)return;const k=e.code;if(k==='ArrowLeft'||k==='KeyA')changeLane(-1);else if(k==='ArrowRight'||k==='KeyD')changeLane(1);else if(k==='ArrowUp'||k==='KeyW'||k==='Space')jump();else if(k==='ArrowDown'||k==='KeyS')slide();else return;e.preventDefault();}; window.addEventListener('keydown',onKey);
             lastT=performance.now();raf=requestAnimationFrame(loop);if(auth)newRound();
         },
-        unmount(){cancelAnimationFrame(raf);window.removeEventListener('keydown',onKey);ctx=canvas=g=statEl=scoreEl=null;course=[];},
+        unmount(){cancelAnimationFrame(raf);clearTimeout(finishTimer);window.removeEventListener('keydown',onKey);ctx=canvas=g=statEl=scoreEl=null;course=[];},
         onData(msg){
             if(msg.t==='start'&&!auth){usedSeeds.add(msg.seed);begin(msg.seed,msg.round,msg.wins);}
             else if(msg.t==='roundreq'&&auth)newRound();
             else if(msg.t==='p')opp={d:msg.d||0,l:Number(msg.l)||0,j:msg.j||0,boost:!!msg.boost,magnet:!!msg.magnet,shield:!!msg.shield,crash:!!msg.crash,coins:Number(msg.coins)||0,combo:Number(msg.combo)||0,skin:Number(msg.skin)||0};
-            else if(msg.t==='finish'&&auth&&!winner)declare('b');
-            else if(msg.t==='result'){winner=msg.w;wins={a:msg.wins?.a||0,b:msg.wins?.b||0};round=msg.round||round;phase='finished';burst(W/2,H/2,70,['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);if(crashes===0)award('clean-finish','UNTOUCHABLE');if(msg.w===me&&maxBehind>300)award('comeback','COMEBACK KID');if(wins[msg.w]>=3){burst(W/2,H/2,120,['#ffe45e','#fff','#ff5f9d','#75eaff']);recordChampion(msg.w);if(msg.w===me)award('champion','METRO CHAMPION');}renderScore();}
+            else if(msg.t==='finish'&&auth&&!winner){remoteFinish=Number(msg.time)||0;resolveFinish();}
+            else if(msg.t==='result'){clearTimeout(finishTimer);finishTimer=0;winner=msg.w;wins={a:msg.wins?.a||0,b:msg.wins?.b||0};round=msg.round||round;phase='finished';burst(W/2,H/2,70,['#ffe45e','#5db4ff','#ff5f8f','#76f7c4']);if(crashes===0)award('clean-finish','UNTOUCHABLE');if(msg.w===me&&maxBehind>300)award('comeback','COMEBACK KID');if(wins[msg.w]>=3){burst(W/2,H/2,120,['#ffe45e','#fff','#ff5f9d','#75eaff']);recordChampion(msg.w);if(msg.w===me)award('champion','METRO CHAMPION');}renderScore();}
         }
     });
 })();
