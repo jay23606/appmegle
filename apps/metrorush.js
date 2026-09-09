@@ -14,15 +14,15 @@
     const SKINS = [['#5db4ff','#eaf7ff'],['#79e06b','#efffe9'],['#ff5f9d','#fff0f7'],['#b889ff','#f6efff'],['#ffb13b','#fff6df']];
     let ctx = null, auth = false, me = 'a', canvas = null, g = null, statEl = null, scoreEl = null, raf = 0;
     let seed = 1, course = [], dist = 0, lane = 1, laneX = 1, jumpY = 0, jumpV = 0, sliding = 0, boost = 0, magnet = 0, shield = 0, draft = 0, crash = 0, coins = 0;
-    let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0], modifier = 0, champRecorded = false;
-    let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, bestCombo = 0, careerBest = Number(localStorage.getItem('mr-best-combo') || 0), matchWins = Number(localStorage.getItem('mr-match-wins') || 0), skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
+    let phase = 'idle', winner = null, round = 0, wins = { a: 0, b: 0 }, hit = new Set(), collected = new Set(), passed = new Set(), usedSeeds = new Set(), theme = THEMES[0], modifier = 0, mission = 'coins', missionGoal = 8, missionDone = false, champRecorded = false;
+    let particles = [], nearText = '', nearTimer = 0, shake = 0, combo = 0, cleanTotal = 0, bestCombo = 0, careerBest = Number(localStorage.getItem('mr-best-combo') || 0), matchWins = Number(localStorage.getItem('mr-match-wins') || 0), skin = Number(localStorage.getItem('mr-skin') || 0) % SKINS.length;
     let reducedMotion = localStorage.getItem('mr-reduced-motion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
     let opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0 }, lastT = 0, lastSend = 0, countEnd = 0, swipe = null, onKey = null;
     let oppView = { d: 0, l: 1, j: 0 };
     const rndFor = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
     const build = (sd) => {
-        const rnd = rndFor(sd); course = []; theme = THEMES[Math.abs(sd) % THEMES.length];modifier=(sd>>>5)%MODIFIERS.length;
+        const rnd = rndFor(sd); course = []; theme = THEMES[Math.abs(sd) % THEMES.length];modifier=(sd>>>5)%MODIFIERS.length;mission=((sd>>>9)&1)?'clean':'coins';missionGoal=mission==='clean'?4:8;
         let x = 460 + rnd() * 170, rhythm = .82 + rnd() * .42;
         while (x < FINISH - 300) {
             const lanes = [0, 1, 2], difficulty = x / FINISH;
@@ -48,7 +48,7 @@
     const begin = (sd, n, tally) => {
         seed = sd; round = n || round + 1; if (tally) wins = { a: tally.a || 0, b: tally.b || 0 };
         build(seed); dist = 0; lane = laneX = 1; jumpY = jumpV = sliding = boost = magnet = shield = draft = crash = coins = 0;
-        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = bestCombo = 0; winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };oppView={d:0,l:1,j:0};
+        hit = new Set(); collected = new Set(); passed = new Set(); particles = []; nearText = ''; nearTimer = shake = combo = cleanTotal = bestCombo = 0;missionDone=false;winner = null; opp = { d: 0, l: 1, j: 0, boost: 0, magnet: 0, shield: 0, crash: 0, coins: 0, combo: 0, skin: 0 };oppView={d:0,l:1,j:0};
         phase = 'count'; countEnd = performance.now() + 3200; renderScore();
     };
     const newRound = () => {
@@ -86,6 +86,7 @@
     const toggleSound = () => { window.AppmegleSound?.toggle?.();updateButtons(); };
     const updateButtons = () => { if(!ctx?.root)return;const fx=ctx.root.querySelector('.fx'),snd=ctx.root.querySelector('.snd');if(fx)fx.textContent=reducedMotion?'FX low':'FX full';if(snd)snd.textContent=window.AppmegleSound?.muted?'Sound off':'Sound on'; };
     const buzz = (pattern) => { if(!reducedMotion)navigator.vibrate?.(pattern); };
+    const checkMission = () => { const value=mission==='coins'?coins:cleanTotal;if(missionDone||value<missionGoal)return;missionDone=true;boost=Math.max(boost,1.5);nearText='MISSION COMPLETE!';nearTimer=1.2;burst(W/2,H/2,35,['#ffe45e','#75eaff','#fff']);buzz([25,25,45]);ctx.send({t:'mission'}); };
     const burst = (x, y, n, colors) => { if(reducedMotion)n=Math.ceil(n*.25);for (let i=0;i<n;i++) particles.push({x,y,vx:(Math.random()-.5)*330,vy:-70-Math.random()*260,life:.55+Math.random()*.8,col:colors[i%colors.length],size:2+Math.random()*5}); };
     const stepFx = (dt) => { if(nearTimer>0)nearTimer-=dt;if(shake>0)shake-=dt; for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=420*dt;p.life-=dt;} particles=particles.filter(p=>p.life>0); };
 
@@ -103,12 +104,12 @@
             const o = course[i], dz = o.x - dist;
             if (dz < -25 && !passed.has(i)) {
                 passed.add(i);
-                if (!hit.has(i) && !collected.has(i) && !['coin','boost','magnet','shield'].includes(o.type) && Math.abs(laneX-o.lane)<.58) { combo++;bestCombo=Math.max(bestCombo,combo);if(bestCombo>careerBest){careerBest=bestCombo;localStorage.setItem('mr-best-combo',careerBest);}if(combo%5===0){boost=Math.max(boost,.8);nearText='STREAK BOOST x'+combo;burst(project(0,laneX).x,GROUND-28,18,['#75eaff','#ffe45e','#fff']);buzz(24);ctx.send({t:'streak'});}else nearText=combo>1?'CLEAN x'+combo:'NEAR MISS!';nearTimer=.75; }
+                if (!hit.has(i) && !collected.has(i) && !['coin','boost','magnet','shield'].includes(o.type) && Math.abs(laneX-o.lane)<.58) { combo++;cleanTotal++;bestCombo=Math.max(bestCombo,combo);if(bestCombo>careerBest){careerBest=bestCombo;localStorage.setItem('mr-best-combo',careerBest);}if(combo%5===0){boost=Math.max(boost,.8);nearText='STREAK BOOST x'+combo;burst(project(0,laneX).x,GROUND-28,18,['#75eaff','#ffe45e','#fff']);buzz(24);ctx.send({t:'streak'});}else nearText=combo>1?'CLEAN x'+combo:'NEAR MISS!';nearTimer=.75;checkMission(); }
             }
             const attracted=o.type==='coin'&&magnet>0&&dz>-15&&dz<155;
             if (dz < -24 || dz > (attracted?155:38) || (!attracted&&Math.abs(laneX - o.lane) > .34)) continue;
             if (o.type === 'coin') {
-                if (!collected.has(i)) { collected.add(i); coins++; burst(project(0,laneX).x,GROUND-jumpY-25,7,['#ffe45e','#fff2a6']);if(coins%5===0)buzz(18);ctx.send({t:'coin'}); }
+                if (!collected.has(i)) { collected.add(i); coins++; burst(project(0,laneX).x,GROUND-jumpY-25,7,['#ffe45e','#fff2a6']);if(coins%5===0)buzz(18);ctx.send({t:'coin'});checkMission(); }
                 continue;
             }
             if (o.type === 'boost') {
@@ -182,12 +183,13 @@
         const danger=course.find(o=>o.x-dist>120&&o.x-dist<430&&o.type!=='coin'&&o.type!=='boost');if(danger){const q=project(danger.x-dist,danger.lane);g.textAlign='center';g.fillStyle='#ffef72';g.font='900 18px system-ui';g.fillText('▼',q.x,q.y-70);}
         if (boost>0) { g.textAlign='center'; g.font='bold 17px system-ui'; g.fillStyle='#ffe45e'; g.fillText('⚡ SPEED BOOST '+boost.toFixed(1)+'s',W/2,48); }
         if(magnet>0||shield>0){g.textAlign='right';g.font='bold 13px system-ui';g.fillStyle='#fff';g.fillText((magnet>0?'🧲 '+magnet.toFixed(1)+'s  ':'')+(shield>0?'🛡 '+shield.toFixed(1)+'s':''),W-22,48);}
+        {const value=Math.min(missionGoal,mission==='coins'?coins:cleanTotal);g.textAlign='right';g.font='900 10px system-ui';g.fillStyle=missionDone?'#75eaff':'#ffffffcc';g.fillText((missionDone?'✓ ':'MISSION ')+(mission==='coins'?'COINS ':'CLEAN ')+value+'/'+missionGoal,W-20,66);}
         if(draft>0){const w=118,p=draft/1.65;g.fillStyle='#071225bb';g.fillRect(W/2-w/2,76,w,10);g.fillStyle='#75eaff';g.fillRect(W/2-w/2+2,78,(w-4)*p,6);g.textAlign='center';g.font='900 10px system-ui';g.fillStyle='#fff';g.fillText('DRAFT BOOST',W/2,72);}
         if(phase==='run'){const lead=Math.round((dist-opp.d)/10),label=Math.abs(lead)<2?'NECK & NECK':lead>0?'LEADING +'+lead+'m':'BEHIND '+Math.abs(lead)+'m';g.textAlign='center';g.font='900 12px system-ui';g.fillStyle=lead>=0?'#75eaff':'#ffcf70';g.fillText(label,W/2,31);if(Math.abs(lead)>25){g.font='bold 11px system-ui';g.fillStyle='#ffffffaa';g.fillText(lead<0?'A boost can close the gap':'Keep the pressure on',W/2,66);}}
         if(nearTimer>0){g.textAlign='center';g.font='900 21px system-ui';g.fillStyle='#fff';g.fillText(nearText,W/2,82);}
         if(phase==='run'&&dist>FINISH*.8){g.textAlign='center';g.font='900 16px system-ui';g.fillStyle='#fff';g.fillText('FINAL STRETCH!',W/2,72);}
         if (crash>0) { g.fillStyle='rgba(255,40,60,.2)'; g.fillRect(0,0,W,H); }
-        if (phase==='count') { const left=Math.max(0,countEnd-performance.now()),n=Math.max(0,Math.ceil((left-200)/1000));g.fillStyle='#0007';g.fillRect(0,0,W,H);g.fillStyle='#ffe45e';g.textAlign='center';g.font='900 17px system-ui';g.fillText((wins.a===2||wins.b===2?'MATCH POINT · ':'')+'ROUND '+round,W/2,H/2-82);g.fillStyle='#ffffffcc';g.font='bold 13px system-ui';g.fillText(THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-59);g.fillStyle='#75eaff';g.font='900 12px system-ui';g.fillText(MODIFIERS[modifier].toUpperCase(),W/2,H/2-39);g.fillStyle='#fff';g.font='900 68px system-ui';g.fillText(n>0?n:'GO!',W/2,H/2+36); }
+        if (phase==='count') { const left=Math.max(0,countEnd-performance.now()),n=Math.max(0,Math.ceil((left-200)/1000));g.fillStyle='#0007';g.fillRect(0,0,W,H);g.fillStyle='#ffe45e';g.textAlign='center';g.font='900 17px system-ui';g.fillText((wins.a===2||wins.b===2?'MATCH POINT · ':'')+'ROUND '+round,W/2,H/2-91);g.fillStyle='#ffffffcc';g.font='bold 13px system-ui';g.fillText(THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-68);g.fillStyle='#75eaff';g.font='900 12px system-ui';g.fillText(MODIFIERS[modifier].toUpperCase(),W/2,H/2-48);g.fillStyle='#ffe45e';g.font='bold 11px system-ui';g.fillText('MISSION: '+(mission==='coins'?'COLLECT '+missionGoal+' COINS':'LAND '+missionGoal+' CLEAN DODGES'),W/2,H/2-29);g.fillStyle='#fff';g.font='900 68px system-ui';g.fillText(n>0?n:'GO!',W/2,H/2+48); }
         if (phase==='idle') { g.fillStyle='#fff'; g.textAlign='center'; g.font='bold 25px system-ui'; g.fillText('Metro Rush',W/2,H/2-10); g.font='14px system-ui'; g.fillText('switch lanes · jump barriers · slide under signs',W/2,H/2+20); }
         if (phase==='finished' || phase==='waiting') { const championship=Math.max(wins.a,wins.b)>=3;g.fillStyle='#000b'; g.fillRect(0,0,W,H); g.fillStyle='#ffe45e';g.textAlign='center';g.font='bold 17px system-ui';g.fillText(championship?'CHAMPIONSHIP COMPLETE':'ROUND '+round+' · '+THEME_NAMES[Math.abs(seed)%THEMES.length],W/2,H/2-91);g.fillStyle='#75eaff';g.font='900 11px system-ui';g.fillText(championship?'FIRST TO THREE':MODIFIERS[modifier].toUpperCase(),W/2,H/2-72);g.fillStyle='#fff';g.font='900 40px system-ui';g.fillText(phase==='waiting'?'FINISH!':championship?(winner===me?'👑 CHAMPION!':'THEY ARE CHAMPION'):winner===me?'🏆 YOU WIN!':'THEY WIN',W/2,H/2-31);g.font='bold 22px system-ui';g.fillText(wins[me]+'  —  '+wins[me==='a'?'b':'a'],W/2,H/2+5);g.font='bold 13px system-ui';g.fillStyle='#75eaff';g.fillText('YOU  ● '+coins+'   clean x'+bestCombo,W/2,H/2+34);g.fillStyle='#ffb86b';g.fillText('THEM  ● '+opp.coins+'   clean x'+opp.combo,W/2,H/2+55);g.font='12px system-ui';g.fillStyle='#ffffffaa';g.fillText('Personal best x'+careerBest+'  ·  match wins '+matchWins,W/2,H/2+78); }
         g.restore();
