@@ -8,12 +8,12 @@
     const minX = M + R, maxX = W - M - R, minY = M + R, maxY = H - M - R;
     const POCKETS = [[M, M], [W/2, M], [W-M, M], [M, H-M], [W/2, H-M], [W-M, H-M]];
 
-    let ctx = null, auth = false, me = 'a', raf = 0, canvas = null, g = null, statEl = null, scoreEl = null, recordEl = null, powerEl = null, powerOut = null, shootBtn = null;
+    let ctx = null, auth = false, me = 'a', raf = 0, canvas = null, g = null, statEl = null, scoreEl = null, recordEl = null, calloutEl = null, newBtn = null, powerEl = null, powerOut = null, shootBtn = null;
     let balls = [], turn = 'a', phase = 'aim', over = false, result = '';
     let series = { a: 0, b: 0 }, streak = { who: '', count: 0 }, seriesId = '', round = 0;
     let localRecord = null;
     let potted = [], scratch = false;                 // accumulated during a shot (caller)
-    let aiming = false, dragging = false, aim = { x: W*0.8, y: H/2 }, power = 45, lastT = 0, lastSend = 0;
+    let aiming = false, dragging = false, aim = { x: W*0.8, y: H/2 }, power = 45, lastT = 0, lastSend = 0, calloutTimer = 0;
 
     const rack = () => {
         const arr = [{ x: W*0.22, y: H/2, vx: 0, vy: 0, on: true, c: 'w' }];
@@ -26,6 +26,13 @@
         return arr;
     };
     const colorsOn = (c) => balls.filter(b => b.on && b.c === c).length;
+    const feedback = (kind, text) => {
+        window.AppmegleSound?.play?.(kind);
+        try { navigator.vibrate?.(kind === 'win' ? [35,35,70] : kind === 'wrong' ? [70,35,70] : 25); } catch (e) {}
+        if (!calloutEl || !text) return;
+        clearTimeout(calloutTimer); calloutEl.textContent = text; calloutEl.className = 'pl-callout show ' + kind;
+        calloutTimer = setTimeout(() => { if (calloutEl) calloutEl.className = 'pl-callout'; }, 1050);
+    };
     const readRecord = () => { try { return JSON.parse(localStorage.getItem('appmegle:pool-record:v1')) || {}; } catch (e) { return {}; } };
     const recordOutcome = () => {
         if (!over || !result || !seriesId || !round) return;
@@ -45,7 +52,12 @@
         for (const b of balls) {
             if (!b.on) continue;
             b.x += b.vx*dt; b.y += b.vy*dt;
-            for (const [px, py] of POCKETS) if (Math.hypot(b.x-px, b.y-py) < PR) { b.on = false; if (b.c === 'w') scratch = true; else potted.push(b.c); break; }
+            for (const [px, py] of POCKETS) if (Math.hypot(b.x-px, b.y-py) < PR) {
+                b.on = false;
+                if (b.c === 'w') { scratch = true; feedback('wrong', 'Scratch!'); ctx.send({ t: 'fx', kind: 'scratch' }); }
+                else { potted.push(b.c); feedback('score', b.c === 'k' ? 'Black potted!' : (b.c === 'r' ? 'Red potted!' : 'Yellow potted!')); ctx.send({ t: 'fx', kind: 'pot', color: b.c }); }
+                break;
+            }
             if (!b.on) continue;
             if (b.x < minX) { b.x = minX; b.vx = Math.abs(b.vx)*0.9; } if (b.x > maxX) { b.x = maxX; b.vx = -Math.abs(b.vx)*0.9; }
             if (b.y < minY) { b.y = minY; b.vy = Math.abs(b.vy)*0.9; } if (b.y > maxY) { b.y = maxY; b.vy = -Math.abs(b.vy)*0.9; }
@@ -93,6 +105,7 @@
             const cleared = colorsOn(myCol) === 0;
             over = true; result = cleared ? turn : (turn === 'a' ? 'b' : 'a');
             series[result]++; streak = { who: result, count: streak.who === result ? streak.count + 1 : 1 }; recordOutcome();
+            feedback(result === me ? 'win' : 'lose', result === me ? 'You win!' : 'You lose');
         } else if (scratch) { respawnCue(); turn = turn === 'a' ? 'b' : 'a'; }
         else { const pottedOwn = potted.filter(c => c === myCol).length; if (!pottedOwn) turn = turn === 'a' ? 'b' : 'a'; }
         balls.forEach(b => { b.vx = b.vy = 0; }); phase = 'aim'; broadcast();
@@ -150,9 +163,11 @@
         }
         if (recordEl) { const record = localRecord || (localRecord = readRecord()), run = record.run ? ' · ' + (record.runType === 'win' ? 'W' : 'L') + record.run : '', text = 'All-time ' + (record.wins || 0) + 'W–' + (record.losses || 0) + 'L' + run; if (recordEl.textContent !== text) recordEl.textContent = text; }
         if (shootBtn) shootBtn.disabled = !canAim() || !aiming;
+        if (newBtn) newBtn.textContent = over ? 'Rematch' : 'New game';
     };
 
     const shoot = (vx, vy) => {
+        feedback('move', '');
         if (auth) { balls[0].vx = vx; balls[0].vy = vy; potted = []; scratch = false; phase = 'roll'; }
         else { phase = 'roll'; ctx.send({ t: 'shot', vx, vy }); }
     };
@@ -178,10 +193,10 @@
             ctx = c; auth = ctx.amCaller; me = auth ? 'a' : 'b';
             localRecord = readRecord();
             ctx.root.innerHTML = '<div class="app-col"><div class="app-bar"><span class="stat"></span><span class="pl-score"></span>' +
-                '<button class="app-btn nb">New game</button></div><canvas id="pl-canvas" width="' + W + '" height="' + H + '"></canvas>' +
+                '<button class="app-btn nb">New game</button></div><div class="pl-table-wrap"><canvas id="pl-canvas" width="' + W + '" height="' + H + '"></canvas><div class="pl-callout" aria-live="polite"></div></div>' +
                 '<div class="pl-shot"><label>Power <input class="pl-power" type="range" min="1" max="100" step="1" value="45"><output>45%</output></label><button class="app-btn pl-shoot" disabled>Shoot</button></div><div class="pl-record"></div></div>';
             canvas = ctx.root.querySelector('#pl-canvas'); g = canvas.getContext('2d');
-            statEl = ctx.root.querySelector('.stat'); scoreEl = ctx.root.querySelector('.pl-score'); recordEl = ctx.root.querySelector('.pl-record');
+            statEl = ctx.root.querySelector('.stat'); scoreEl = ctx.root.querySelector('.pl-score'); recordEl = ctx.root.querySelector('.pl-record'); calloutEl = ctx.root.querySelector('.pl-callout'); newBtn = ctx.root.querySelector('.nb');
             powerEl = ctx.root.querySelector('.pl-power'); powerOut = ctx.root.querySelector('.pl-shot output'); shootBtn = ctx.root.querySelector('.pl-shoot');
             ctx.root.querySelector('.nb').addEventListener('click', newGame);
             powerEl.addEventListener('input', () => { power = Number(powerEl.value); powerOut.textContent = power + '%'; });
@@ -197,11 +212,12 @@
             balls = auth ? rack() : []; if (auth) { seriesId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36); newGame(); }
             lastT = performance.now(); lastSend = 0; raf = requestAnimationFrame(loop);
         },
-        unmount() { cancelAnimationFrame(raf); ctx = canvas = g = statEl = scoreEl = recordEl = powerEl = powerOut = shootBtn = null; balls = []; aiming = dragging = false; },
+        unmount() { cancelAnimationFrame(raf); clearTimeout(calloutTimer); ctx = canvas = g = statEl = scoreEl = recordEl = calloutEl = newBtn = powerEl = powerOut = shootBtn = null; balls = []; aiming = dragging = false; },
         onData(msg) {
-            if (msg.t === 's' && !auth) { balls = msg.b.map(([x, y, on, c]) => ({ x, y, on: !!on, c })); turn = msg.turn; phase = msg.phase; over = msg.over; result = msg.result; if (msg.score) series = { a: Number(msg.score[0])||0, b: Number(msg.score[1])||0 }; if (msg.streak) streak = { who: msg.streak[0]||'', count: Number(msg.streak[1])||0 }; seriesId = msg.sid || seriesId; round = Number(msg.round)||round; recordOutcome(); }
+            if (msg.t === 's' && !auth) { const wasOver = over; balls = msg.b.map(([x, y, on, c]) => ({ x, y, on: !!on, c })); turn = msg.turn; phase = msg.phase; over = msg.over; result = msg.result; if (msg.score) series = { a: Number(msg.score[0])||0, b: Number(msg.score[1])||0 }; if (msg.streak) streak = { who: msg.streak[0]||'', count: Number(msg.streak[1])||0 }; seriesId = msg.sid || seriesId; round = Number(msg.round)||round; recordOutcome(); if (!wasOver && over) feedback(result === me ? 'win' : 'lose', result === me ? 'You win!' : 'You lose'); }
             else if (msg.t === 'shot' && auth) { if (phase === 'aim' && turn === 'b') { balls[0].vx = msg.vx; balls[0].vy = msg.vy; potted = []; scratch = false; phase = 'roll'; } }
             else if (msg.t === 'newreq' && auth) newGame();
+            else if (msg.t === 'fx' && !auth) feedback(msg.kind === 'scratch' ? 'wrong' : 'score', msg.kind === 'scratch' ? 'Scratch!' : msg.color === 'k' ? 'Black potted!' : msg.color === 'r' ? 'Red potted!' : 'Yellow potted!');
         }
     });
 })();
