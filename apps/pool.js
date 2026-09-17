@@ -8,8 +8,10 @@
     const minX = M + R, maxX = W - M - R, minY = M + R, maxY = H - M - R;
     const POCKETS = [[M, M], [W/2, M], [W-M, M], [M, H-M], [W/2, H-M], [W-M, H-M]];
 
-    let ctx = null, auth = false, me = 'a', raf = 0, canvas = null, g = null, statEl = null, powerEl = null, powerOut = null, shootBtn = null;
+    let ctx = null, auth = false, me = 'a', raf = 0, canvas = null, g = null, statEl = null, scoreEl = null, recordEl = null, powerEl = null, powerOut = null, shootBtn = null;
     let balls = [], turn = 'a', phase = 'aim', over = false, result = '';
+    let series = { a: 0, b: 0 }, streak = { who: '', count: 0 }, seriesId = '', round = 0;
+    let localRecord = null;
     let potted = [], scratch = false;                 // accumulated during a shot (caller)
     let aiming = false, dragging = false, aim = { x: W*0.8, y: H/2 }, power = 45, lastT = 0, lastSend = 0;
 
@@ -24,6 +26,20 @@
         return arr;
     };
     const colorsOn = (c) => balls.filter(b => b.on && b.c === c).length;
+    const readRecord = () => { try { return JSON.parse(localStorage.getItem('appmegle:pool-record:v1')) || {}; } catch (e) { return {}; } };
+    const recordOutcome = () => {
+        if (!over || !result || !seriesId || !round) return;
+        const marker = seriesId + ':' + round, record = localRecord || readRecord(), seen = Array.isArray(record.seen) ? record.seen : [];
+        if (seen.includes(marker)) return;
+        const won = result === me, type = won ? 'win' : 'loss';
+        record.wins = Number(record.wins) || 0; record.losses = Number(record.losses) || 0;
+        record[won ? 'wins' : 'losses']++;
+        record.run = record.runType === type ? (Number(record.run) || 0) + 1 : 1; record.runType = type;
+        record.bestWin = Math.max(Number(record.bestWin) || 0, type === 'win' ? record.run : 0);
+        record.seen = [...seen.slice(-49), marker];
+        localRecord = record;
+        try { localStorage.setItem('appmegle:pool-record:v1', JSON.stringify(record)); } catch (e) {}
+    };
 
     const sub = (dt) => {
         for (const b of balls) {
@@ -76,6 +92,7 @@
         if (colorsOn('k') === 0) {                     // black potted → game ends this turn
             const cleared = colorsOn(myCol) === 0;
             over = true; result = cleared ? turn : (turn === 'a' ? 'b' : 'a');
+            series[result]++; streak = { who: result, count: streak.who === result ? streak.count + 1 : 1 }; recordOutcome();
         } else if (scratch) { respawnCue(); turn = turn === 'a' ? 'b' : 'a'; }
         else { const pottedOwn = potted.filter(c => c === myCol).length; if (!pottedOwn) turn = turn === 'a' ? 'b' : 'a'; }
         balls.forEach(b => { b.vx = b.vy = 0; }); phase = 'aim'; broadcast();
@@ -85,15 +102,24 @@
         while (balls.some(b => b !== cue && b.on && Math.hypot(b.x-cue.x, b.y-cue.y) < 2*R)) cue.y += 2*R;
     };
 
-    const broadcast = () => ctx.send({ t: 's', b: balls.map(o => [Math.round(o.x), Math.round(o.y), o.on?1:0, o.c]), turn, phase, over, result });
+    const broadcast = () => ctx.send({ t: 's', b: balls.map(o => [Math.round(o.x), Math.round(o.y), o.on?1:0, o.c]), turn, phase, over, result, score: [series.a, series.b], streak: [streak.who, streak.count], sid: seriesId, round });
 
     const draw = () => {
         g.clearRect(0, 0, W, H);
-        g.fillStyle = 'rgba(80,45,25,.42)'; g.fillRect(0, 0, W, H);                                   // rail (translucent)
-        g.fillStyle = 'rgba(28,95,52,.42)'; g.fillRect(M-6, M-6, W-2*(M-6), H-2*(M-6));               // felt (translucent)
+        const rail = g.createLinearGradient(0, 0, 0, H); rail.addColorStop(0, 'rgba(132,79,39,.8)'); rail.addColorStop(.5, 'rgba(65,35,20,.78)'); rail.addColorStop(1, 'rgba(117,64,31,.82)');
+        g.fillStyle = rail; g.fillRect(0, 0, W, H);
+        const felt = g.createRadialGradient(W*.5, H*.46, 20, W*.5, H*.5, W*.58); felt.addColorStop(0, 'rgba(38,130,73,.78)'); felt.addColorStop(1, 'rgba(13,70,42,.82)');
+        g.fillStyle = felt; g.fillRect(M-6, M-6, W-2*(M-6), H-2*(M-6));
+        g.strokeStyle = 'rgba(219,180,103,.35)'; g.lineWidth = 1; g.strokeRect(M-5.5, M-5.5, W-2*(M-5.5), H-2*(M-5.5));
+        g.fillStyle = 'rgba(255,235,184,.72)';
+        for (const x of [W*.2,W*.35,W*.65,W*.8]) for (const y of [M*.48,H-M*.48]) { g.beginPath(); g.arc(x,y,2.2,0,7); g.fill(); }
+        for (const y of [H*.28,H*.5,H*.72]) for (const x of [M*.48,W-M*.48]) { g.beginPath(); g.arc(x,y,2.2,0,7); g.fill(); }
         g.fillStyle = 'rgba(0,0,0,.55)'; POCKETS.forEach(([x, y]) => { g.beginPath(); g.arc(x, y, PR-2, 0, 7); g.fill(); });
         const fill = { w: '#fff', r: '#e23b3b', y: '#ecc233', k: '#111' };
-        for (const b of balls) if (b.on) { g.fillStyle = fill[b.c]; g.beginPath(); g.arc(b.x, b.y, R, 0, 7); g.fill(); g.strokeStyle = 'rgba(0,0,0,.3)'; g.stroke(); }
+        for (const b of balls) if (b.on) {
+            g.save(); g.shadowColor = 'rgba(0,0,0,.42)'; g.shadowBlur = 5; g.shadowOffsetY = 2; g.fillStyle = fill[b.c]; g.beginPath(); g.arc(b.x, b.y, R, 0, 7); g.fill(); g.restore();
+            g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 1; g.stroke(); g.fillStyle = 'rgba(255,255,255,.52)'; g.beginPath(); g.arc(b.x-3,b.y-3,2.1,0,7); g.fill();
+        }
         if (aiming && canAim() && balls[0].on) {
             const cue = balls[0], dx = aim.x-cue.x, dy = aim.y-cue.y, d = Math.hypot(dx, dy) || 1;
             const sdx = dx/d, sdy = dy/d, pdx = -sdx, pdy = -sdy, powerRatio = power/100;
@@ -118,6 +144,11 @@
         const myCol = me === 'a' ? 'r' : 'y';
         if (over) statEl.textContent = result === me ? '🎱 You win!' : 'You lose';
         else statEl.textContent = 'You: ' + (7 - colorsOn(myCol)) + '/7 ' + (myCol === 'r' ? 'red' : 'yellow') + ' · ' + (turn === me ? (phase === 'aim' ? 'your shot — point at the target, set power, then shoot' : 'rolling…') : 'their shot');
+        if (scoreEl) {
+            const run = streak.count ? (streak.who === me ? ' · W' : ' · L') + streak.count : '';
+            const text = 'Series  You ' + series[me] + '–' + series[me === 'a' ? 'b' : 'a'] + ' Them' + run; if (scoreEl.textContent !== text) scoreEl.textContent = text;
+        }
+        if (recordEl) { const record = localRecord || (localRecord = readRecord()), run = record.run ? ' · ' + (record.runType === 'win' ? 'W' : 'L') + record.run : '', text = 'All-time ' + (record.wins || 0) + 'W–' + (record.losses || 0) + 'L' + run; if (recordEl.textContent !== text) recordEl.textContent = text; }
         if (shootBtn) shootBtn.disabled = !canAim() || !aiming;
     };
 
@@ -139,17 +170,18 @@
 
     const canAim = () => phase === 'aim' && turn === me && !over && balls[0] && balls[0].on;
     const pt = (e) => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX-r.left)/r.width*W, y: (e.clientY-r.top)/r.height*H }; };
-    const newGame = () => { if (auth) { balls = rack(); turn = 'a'; phase = 'aim'; over = false; result = ''; potted = []; scratch = false; broadcast(); } else ctx.send({ t: 'newreq' }); };
+    const newGame = () => { if (auth) { round++; balls = rack(); turn = 'a'; phase = 'aim'; over = false; result = ''; aiming = dragging = false; potted = []; scratch = false; broadcast(); } else ctx.send({ t: 'newreq' }); };
 
     window.Appmegle.register({
         id: 'pool', label: 'Pool', css: 'apps/pool.css',
         mount(c) {
             ctx = c; auth = ctx.amCaller; me = auth ? 'a' : 'b';
-            ctx.root.innerHTML = '<div class="app-col"><div class="app-bar"><span class="stat"></span>' +
+            localRecord = readRecord();
+            ctx.root.innerHTML = '<div class="app-col"><div class="app-bar"><span class="stat"></span><span class="pl-score"></span>' +
                 '<button class="app-btn nb">New game</button></div><canvas id="pl-canvas" width="' + W + '" height="' + H + '"></canvas>' +
-                '<div class="pl-shot"><label>Power <input class="pl-power" type="range" min="1" max="100" step="1" value="45"><output>45%</output></label><button class="app-btn pl-shoot" disabled>Shoot</button></div></div>';
+                '<div class="pl-shot"><label>Power <input class="pl-power" type="range" min="1" max="100" step="1" value="45"><output>45%</output></label><button class="app-btn pl-shoot" disabled>Shoot</button></div><div class="pl-record"></div></div>';
             canvas = ctx.root.querySelector('#pl-canvas'); g = canvas.getContext('2d');
-            statEl = ctx.root.querySelector('.stat');
+            statEl = ctx.root.querySelector('.stat'); scoreEl = ctx.root.querySelector('.pl-score'); recordEl = ctx.root.querySelector('.pl-record');
             powerEl = ctx.root.querySelector('.pl-power'); powerOut = ctx.root.querySelector('.pl-shot output'); shootBtn = ctx.root.querySelector('.pl-shoot');
             ctx.root.querySelector('.nb').addEventListener('click', newGame);
             powerEl.addEventListener('input', () => { power = Number(powerEl.value); powerOut.textContent = power + '%'; });
@@ -162,12 +194,12 @@
                 const dx = aim.x-balls[0].x, dy = aim.y-balls[0].y, d = Math.hypot(dx, dy); if (d < 3) return;
                 const speed = shotSpeed(power); aiming = false; shoot(dx/d*speed, dy/d*speed);
             });
-            balls = auth ? rack() : []; if (auth) newGame();
+            balls = auth ? rack() : []; if (auth) { seriesId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36); newGame(); }
             lastT = performance.now(); lastSend = 0; raf = requestAnimationFrame(loop);
         },
-        unmount() { cancelAnimationFrame(raf); ctx = canvas = g = statEl = powerEl = powerOut = shootBtn = null; balls = []; aiming = dragging = false; },
+        unmount() { cancelAnimationFrame(raf); ctx = canvas = g = statEl = scoreEl = recordEl = powerEl = powerOut = shootBtn = null; balls = []; aiming = dragging = false; },
         onData(msg) {
-            if (msg.t === 's' && !auth) { balls = msg.b.map(([x, y, on, c]) => ({ x, y, on: !!on, c })); turn = msg.turn; phase = msg.phase; over = msg.over; result = msg.result; }
+            if (msg.t === 's' && !auth) { balls = msg.b.map(([x, y, on, c]) => ({ x, y, on: !!on, c })); turn = msg.turn; phase = msg.phase; over = msg.over; result = msg.result; if (msg.score) series = { a: Number(msg.score[0])||0, b: Number(msg.score[1])||0 }; if (msg.streak) streak = { who: msg.streak[0]||'', count: Number(msg.streak[1])||0 }; seriesId = msg.sid || seriesId; round = Number(msg.round)||round; recordOutcome(); }
             else if (msg.t === 'shot' && auth) { if (phase === 'aim' && turn === 'b') { balls[0].vx = msg.vx; balls[0].vy = msg.vy; potted = []; scratch = false; phase = 'roll'; } }
             else if (msg.t === 'newreq' && auth) newGame();
         }

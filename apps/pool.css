@@ -9,6 +9,8 @@
 .pl-shot output { font-variant-numeric: tabular-nums; text-align: right; color: #ffdc75; }
 .pl-shoot { min-width: 88px; background: linear-gradient(135deg,#2ea85d,#16793d); font-weight: 800; }
 .pl-shoot:disabled { opacity: .42; cursor: default; }
+.pl-score { margin-left: auto; padding: 4px 8px; border-radius: 999px; background: rgba(255,255,255,.09); color: #ffe49a; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.pl-record { width: min(94vw, 64vh, 720px); padding: 3px 5px 0; color: rgba(255,255,255,.62); font-size: 11px; text-align: right; }
 @media (max-width: 520px) {
     .pl-shot { gap: 8px; }
     .pl-shot label { grid-template-columns: auto minmax(80px,1fr) 38px; gap: 5px; }

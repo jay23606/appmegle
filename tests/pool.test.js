@@ -32,3 +32,14 @@ test('power curve provides fine low-speed control and a wider top range', () => 
     assert.ok(api.shotSpeed(10)<api.shotSpeed(20));
     assert.equal(api.shotSpeed(100),3200);
 });
+
+test('local win/loss streak records each synchronized round only once', () => {
+    const recordSource=source.slice(source.indexOf('const readRecord'),source.indexOf('const sub'));
+    const values=new Map(), localStorage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)};
+    const context=vm.createContext({JSON,localStorage,over:true,result:'a',me:'a',seriesId:'series',round:1,localRecord:null});
+    vm.runInContext(`${recordSource};globalThis.recordOutcome=recordOutcome`,context);
+    context.recordOutcome(); context.recordOutcome();
+    context.round=2; context.result='b'; context.recordOutcome();
+    const record=JSON.parse(values.get('appmegle:pool-record:v1'));
+    assert.deepEqual({wins:record.wins,losses:record.losses,runType:record.runType,run:record.run},{wins:1,losses:1,runType:'loss',run:1});
+});
