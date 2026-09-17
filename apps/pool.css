@@ -3,3 +3,14 @@
     width: min(94vw, 64vh, 720px); aspect-ratio: 700 / 380; touch-action: none; cursor: crosshair;
     background: transparent; border-radius: 12px; box-shadow: 0 6px 28px rgba(0,0,0,.6);
 }
+.pl-shot { width: min(94vw, 64vh, 720px); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 4px 0; }
+.pl-shot label { display: grid; grid-template-columns: auto minmax(110px, 1fr) 42px; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; }
+.pl-power { width: 100%; min-height: 28px; accent-color: #ffcc4d; touch-action: pan-x; }
+.pl-shot output { font-variant-numeric: tabular-nums; text-align: right; color: #ffdc75; }
+.pl-shoot { min-width: 88px; background: linear-gradient(135deg,#2ea85d,#16793d); font-weight: 800; }
+.pl-shoot:disabled { opacity: .42; cursor: default; }
+@media (max-width: 520px) {
+    .pl-shot { gap: 8px; }
+    .pl-shot label { grid-template-columns: auto minmax(80px,1fr) 38px; gap: 5px; }
+    .pl-shoot { min-width: 72px; padding-left: 11px; padding-right: 11px; }
+}

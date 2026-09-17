@@ -4,14 +4,14 @@
 // stop, then resolves the turn. Caller = reds, answerer = yellows; clear your colour
 // then pot the black to win. Potting the black early, or with colours left, loses.
 (function () {
-    const W = 700, H = 380, M = 28, R = 9, PR = 19, MAXSPD = 2600, FRICT = 0.989, SUB = 7, SEND = 33;
+    const W = 700, H = 380, M = 28, R = 9, PR = 19, MAXSPD = 3400, FRICT = 0.989, SUB = 7, SEND = 33;
     const minX = M + R, maxX = W - M - R, minY = M + R, maxY = H - M - R;
     const POCKETS = [[M, M], [W/2, M], [W-M, M], [M, H-M], [W/2, H-M], [W-M, H-M]];
 
-    let ctx = null, auth = false, me = 'a', raf = 0, canvas = null, g = null, statEl = null;
+    let ctx = null, auth = false, me = 'a', raf = 0, canvas = null, g = null, statEl = null, powerEl = null, powerOut = null, shootBtn = null;
     let balls = [], turn = 'a', phase = 'aim', over = false, result = '';
     let potted = [], scratch = false;                 // accumulated during a shot (caller)
-    let aiming = false, aim = { x: 0, y: 0 }, lastT = 0, lastSend = 0;
+    let aiming = false, dragging = false, aim = { x: W*0.8, y: H/2 }, power = 45, lastT = 0, lastSend = 0;
 
     const rack = () => {
         const arr = [{ x: W*0.22, y: H/2, vx: 0, vy: 0, on: true, c: 'w' }];
@@ -47,6 +47,30 @@
     };
     const stopped = () => balls.every(b => !b.on || (Math.abs(b.vx) < 5 && Math.abs(b.vy) < 5));
 
+    const rayToRail = (x, y, dx, dy, inset = M + R) => {
+        const tx = dx > 0 ? (W-inset-x)/dx : dx < 0 ? (inset-x)/dx : Infinity;
+        const ty = dy > 0 ? (H-inset-y)/dy : dy < 0 ? (inset-y)/dy : Infinity;
+        return Math.max(0, Math.min(tx >= 0 ? tx : Infinity, ty >= 0 ? ty : Infinity));
+    };
+    const guide = (cue, dx, dy) => {
+        const rail = rayToRail(cue.x, cue.y, dx, dy); let hit = null, hitT = rail;
+        for (let i = 1; i < balls.length; i++) {
+            const b = balls[i]; if (!b.on) continue;
+            const ox = b.x-cue.x, oy = b.y-cue.y, projection = ox*dx + oy*dy;
+            if (projection <= R) continue;
+            const side2 = ox*ox + oy*oy - projection*projection, radius = 2*R;
+            if (side2 > radius*radius) continue;
+            const t = projection - Math.sqrt(Math.max(0, radius*radius-side2));
+            if (t > R && t < hitT) { hitT = t; hit = b; }
+        }
+        if (!hit) return { cueDistance: rail, hit: null };
+        const ghost = { x: cue.x + dx*hitT, y: cue.y + dy*hitT };
+        const nx0 = hit.x-ghost.x, ny0 = hit.y-ghost.y, nd = Math.hypot(nx0, ny0) || 1;
+        const nx = nx0/nd, ny = ny0/nd;
+        return { cueDistance: hitT, hit, ghost, objectDx: nx, objectDy: ny, objectDistance: rayToRail(hit.x, hit.y, nx, ny) };
+    };
+    const shotSpeed = value => 120 + Math.pow(Math.max(1, Math.min(100, value))/100, 1.45) * 3080;
+
     const resolve = () => {
         const myCol = turn === 'a' ? 'r' : 'y';
         if (colorsOn('k') === 0) {                     // black potted → game ends this turn
@@ -70,23 +94,31 @@
         g.fillStyle = 'rgba(0,0,0,.55)'; POCKETS.forEach(([x, y]) => { g.beginPath(); g.arc(x, y, PR-2, 0, 7); g.fill(); });
         const fill = { w: '#fff', r: '#e23b3b', y: '#ecc233', k: '#111' };
         for (const b of balls) if (b.on) { g.fillStyle = fill[b.c]; g.beginPath(); g.arc(b.x, b.y, R, 0, 7); g.fill(); g.strokeStyle = 'rgba(0,0,0,.3)'; g.stroke(); }
-        if (aiming && balls[0].on) {
-            const cue = balls[0], dx = cue.x - aim.x, dy = cue.y - aim.y, d = Math.hypot(dx, dy) || 1;
-            const sdx = dx/d, sdy = dy/d, pdx = -sdx, pdy = -sdy, power = Math.min(d, 170)/170;   // shot dir vs cue (butt) dir
-            // aim guide: where the ball will travel
-            g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 2; g.setLineDash([7, 7]);
-            g.beginPath(); g.moveTo(cue.x + sdx*R, cue.y + sdy*R); g.lineTo(cue.x + sdx*250, cue.y + sdy*250); g.stroke(); g.setLineDash([]);
+        if (aiming && canAim() && balls[0].on) {
+            const cue = balls[0], dx = aim.x-cue.x, dy = aim.y-cue.y, d = Math.hypot(dx, dy) || 1;
+            const sdx = dx/d, sdy = dy/d, pdx = -sdx, pdy = -sdy, powerRatio = power/100;
+            const path = guide(cue, sdx, sdy);
+            // Thin, long guides: white is the cue-ball centre path; gold is the
+            // first object ball's projected path. The ghost ring shows impact.
+            g.lineWidth = 1.25; g.setLineDash([8, 6]);
+            g.strokeStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.moveTo(cue.x + sdx*R, cue.y + sdy*R); g.lineTo(cue.x + sdx*path.cueDistance, cue.y + sdy*path.cueDistance); g.stroke();
+            if (path.hit) {
+                g.strokeStyle = 'rgba(255,213,92,.95)'; g.beginPath(); g.moveTo(path.hit.x + path.objectDx*R, path.hit.y + path.objectDy*R); g.lineTo(path.hit.x + path.objectDx*path.objectDistance, path.hit.y + path.objectDy*path.objectDistance); g.stroke();
+                g.setLineDash([3, 4]); g.strokeStyle = 'rgba(255,255,255,.58)'; g.beginPath(); g.arc(path.ghost.x, path.ghost.y, R, 0, Math.PI*2); g.stroke();
+            }
+            g.setLineDash([]);
             // cue stick behind the ball, drawn back proportional to power
-            const pull = 7 + power*42, tx = cue.x + pdx*(R + pull), ty = cue.y + pdy*(R + pull), bx = tx + pdx*180, by = ty + pdy*180;
+            const pull = 7 + powerRatio*55, tx = cue.x + pdx*(R + pull), ty = cue.y + pdy*(R + pull), bx = tx + pdx*180, by = ty + pdy*180;
             g.lineCap = 'round';
             g.lineWidth = 7; g.strokeStyle = '#7a5a32'; g.beginPath(); g.moveTo(tx, ty); g.lineTo(bx, by); g.stroke();             // shaft
             g.lineWidth = 7; g.strokeStyle = '#d8b878'; g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx + pdx*44, ty + pdy*44); g.stroke();   // pale wood near tip
-            g.lineWidth = 9; g.strokeStyle = 'rgb(' + ((90 + 170*power)|0) + ',' + ((205 - 165*power)|0) + ',90)'; g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx + pdx*9, ty + pdy*9); g.stroke();   // tip, green→red by power
+            g.lineWidth = 9; g.strokeStyle = 'rgb(' + ((90 + 170*powerRatio)|0) + ',' + ((205 - 165*powerRatio)|0) + ',90)'; g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx + pdx*9, ty + pdy*9); g.stroke();   // tip, green→red by power
             g.lineCap = 'butt';
         }
         const myCol = me === 'a' ? 'r' : 'y';
         if (over) statEl.textContent = result === me ? '🎱 You win!' : 'You lose';
-        else statEl.textContent = 'You: ' + (7 - colorsOn(myCol)) + '/7 ' + (myCol === 'r' ? 'red' : 'yellow') + ' · ' + (turn === me ? (phase === 'aim' ? 'your shot — drag back behind the ball to aim & power' : 'rolling…') : 'their shot');
+        else statEl.textContent = 'You: ' + (7 - colorsOn(myCol)) + '/7 ' + (myCol === 'r' ? 'red' : 'yellow') + ' · ' + (turn === me ? (phase === 'aim' ? 'your shot — point at the target, set power, then shoot' : 'rolling…') : 'their shot');
+        if (shootBtn) shootBtn.disabled = !canAim() || !aiming;
     };
 
     const shoot = (vx, vy) => {
@@ -114,23 +146,26 @@
         mount(c) {
             ctx = c; auth = ctx.amCaller; me = auth ? 'a' : 'b';
             ctx.root.innerHTML = '<div class="app-col"><div class="app-bar"><span class="stat"></span>' +
-                '<button class="app-btn nb">New game</button></div><canvas id="pl-canvas" width="' + W + '" height="' + H + '"></canvas></div>';
+                '<button class="app-btn nb">New game</button></div><canvas id="pl-canvas" width="' + W + '" height="' + H + '"></canvas>' +
+                '<div class="pl-shot"><label>Power <input class="pl-power" type="range" min="1" max="100" step="1" value="45"><output>45%</output></label><button class="app-btn pl-shoot" disabled>Shoot</button></div></div>';
             canvas = ctx.root.querySelector('#pl-canvas'); g = canvas.getContext('2d');
             statEl = ctx.root.querySelector('.stat');
+            powerEl = ctx.root.querySelector('.pl-power'); powerOut = ctx.root.querySelector('.pl-shot output'); shootBtn = ctx.root.querySelector('.pl-shoot');
             ctx.root.querySelector('.nb').addEventListener('click', newGame);
-            canvas.addEventListener('pointerdown', (e) => { if (!canAim()) return; aiming = true; aim = pt(e); });
-            canvas.addEventListener('pointermove', (e) => { if (aiming) aim = pt(e); });
-            canvas.addEventListener('pointerup', () => {
-                if (!aiming) return; aiming = false;
-                const dx = balls[0].x - aim.x, dy = balls[0].y - aim.y, d = Math.hypot(dx, dy);
-                if (d < 8) return;
-                const pow = Math.min(d, 170)/170 * 2300, a = Math.atan2(dy, dx);
-                shoot(Math.cos(a)*pow, Math.sin(a)*pow);
+            powerEl.addEventListener('input', () => { power = Number(powerEl.value); powerOut.textContent = power + '%'; });
+            canvas.addEventListener('pointerdown', (e) => { if (!canAim()) return; aiming = dragging = true; aim = pt(e); canvas.setPointerCapture?.(e.pointerId); });
+            canvas.addEventListener('pointermove', (e) => { if (dragging) aim = pt(e); });
+            canvas.addEventListener('pointerup', (e) => { if (dragging) { aim = pt(e); dragging = false; canvas.releasePointerCapture?.(e.pointerId); } });
+            canvas.addEventListener('pointercancel', () => { dragging = false; });
+            shootBtn.addEventListener('click', () => {
+                if (!canAim() || !aiming) return;
+                const dx = aim.x-balls[0].x, dy = aim.y-balls[0].y, d = Math.hypot(dx, dy); if (d < 3) return;
+                const speed = shotSpeed(power); aiming = false; shoot(dx/d*speed, dy/d*speed);
             });
             balls = auth ? rack() : []; if (auth) newGame();
             lastT = performance.now(); lastSend = 0; raf = requestAnimationFrame(loop);
         },
-        unmount() { cancelAnimationFrame(raf); ctx = canvas = g = statEl = null; balls = []; aiming = false; },
+        unmount() { cancelAnimationFrame(raf); ctx = canvas = g = statEl = powerEl = powerOut = shootBtn = null; balls = []; aiming = dragging = false; },
         onData(msg) {
             if (msg.t === 's' && !auth) { balls = msg.b.map(([x, y, on, c]) => ({ x, y, on: !!on, c })); turn = msg.turn; phase = msg.phase; over = msg.over; result = msg.result; }
             else if (msg.t === 'shot' && auth) { if (phase === 'aim' && turn === 'b') { balls[0].vx = msg.vx; balls[0].vy = msg.vy; potted = []; scratch = false; phase = 'roll'; } }
